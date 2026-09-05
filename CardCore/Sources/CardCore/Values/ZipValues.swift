@@ -46,4 +46,58 @@ internal enum ZipValues {
   /// A reader identifies an ASiC container by looking exactly past
   /// here.
   internal static let localHeaderLength = 30
+
+  /// Compression method 8: deflated (APPNOTE 4.4.5).
+  internal static let methodDeflated: UInt16 = 8
+
+  /// Fixed length of the End of Central Directory record (APPNOTE 4.3.16).
+  internal static let eocdRecordLength = 22
+
+  /// Maximum length to search backwards for EOCD record (22 bytes fixed + 65535 comment).
+  internal static let eocdSearchLimit = 65_557
+
+  /// Central directory header length before filename begins (APPNOTE 4.3.12).
+  internal static let centralDirectoryHeaderLength = 46
+
+  /// Byte offset of total entry count within EOCD record.
+  internal static let eocdEntryCountOffset = 10
+
+  /// Byte offset of central directory size within EOCD record.
+  internal static let eocdDirectorySizeOffset = 12
+
+  /// Byte offset of central directory start position within EOCD record.
+  internal static let eocdDirectoryOffsetOffset = 16
+
+  /// Byte offset of compression method in central directory header.
+  internal static let cdMethodOffset = 10
+
+  /// Byte offset of CRC-32 in central directory header.
+  internal static let cdCrcOffset = 16
+
+  /// Byte offset of compressed size in central directory header.
+  internal static let cdCompressedSizeOffset = 20
+
+  /// Byte offset of uncompressed size in central directory header.
+  internal static let cdUncompressedSizeOffset = 24
+
+  /// Byte offset of file name length in central directory header.
+  internal static let cdNameLengthOffset = 28
+
+  /// Byte offset of extra field length in central directory header.
+  internal static let cdExtraLengthOffset = 30
+
+  /// Byte offset of comment length in central directory header.
+  internal static let cdCommentLengthOffset = 32
+
+  /// Byte offset of local header offset in central directory header.
+  internal static let cdLocalHeaderOffset = 42
+
+  /// Byte offset of file name length in local file header.
+  internal static let localNameLengthOffset = 26
+
+  /// Byte offset of extra field length in local file header.
+  internal static let localExtraLengthOffset = 28
+
+  /// Negative window bits for zlib raw DEFLATE decompressor (RFC 1951).
+  internal static let zlibRawDeflateWindowBits: Int32 = -15
 }

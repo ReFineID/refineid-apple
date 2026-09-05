@@ -55,5 +55,53 @@
 		<string>A0000002471001</string>
 		<string>A000000308000010000100</string>
 	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>org.etsi.asic-e</string>
+			<key>UTTypeDescription</key>
+			<string>ASiC-E Container</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>asice</string>
+					<string>sce</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.etsi.asic-e+zip</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>ee.ria.bdoc</string>
+			<key>UTTypeDescription</key>
+			<string>BDOC Container</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>bdoc</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.bdoc-1.0</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

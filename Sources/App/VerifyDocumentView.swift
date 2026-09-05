@@ -8,6 +8,17 @@
 
   /// Verifies a chosen signed PDF and reports each signature's facts.
   internal struct VerifyDocumentView: View {
+    private static let supportedDocumentTypes: [UTType] = {
+      var types: [UTType] = [.pdf]
+      if let asice = UTType("org.etsi.asic-e") ?? UTType(filenameExtension: "asice") {
+        types.append(asice)
+      }
+      if let bdoc = UTType("ee.ria.bdoc") ?? UTType(filenameExtension: "bdoc") {
+        types.append(bdoc)
+      }
+      return types
+    }()
+
     @StateObject private var model = VerifyDocumentModel()
     @State private var importing = false
 
@@ -36,7 +47,7 @@
       .navigationTitle(text("verify.title", "Verify"))
       .fileImporter(
         isPresented: $importing,
-        allowedContentTypes: [.pdf]
+        allowedContentTypes: Self.supportedDocumentTypes
       ) { result in
         if case .success(let url) = result {
           model.verify(url: url)
