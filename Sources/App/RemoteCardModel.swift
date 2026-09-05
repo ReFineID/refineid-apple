@@ -57,7 +57,7 @@
         if !hasPair {
           PersistentTokenRegistry.withdraw()
           phase = .idle
-        } else {
+        } else if holder == nil {
           connect()
         }
       }
@@ -65,7 +65,17 @@
 
     /// Re-reads the selected pairing and, when one is there, uses it.
     internal func refreshThenConnect() {
-      refresh()
+      Task {
+        let catalog = RappPairCatalog(vault: RappDeviceVault())
+        let selected = try? await catalog.selectedPair()
+        hasPair = selected?.role == .requester
+        if !hasPair {
+          PersistentTokenRegistry.withdraw()
+          phase = .idle
+        } else {
+          connect()
+        }
+      }
     }
 
     /// Reads the holder from the remote card's authentication
@@ -88,34 +98,32 @@
       } catch let error as RappRequesterClientError {
         response = nil
         failure = remoteFailureText(for: error)
-        await discardUnusablePairing()
+        if error.leavesPairingUnusable {
+          await discardUnusablePairing()
+        }
       } catch {
         response = nil
         failure = String(localized: "The remote card could not be read.")
-        await discardUnusablePairing()
       }
-      await MainActor.run { setFailureText(failure) }
-      let holder: String?
-      if case .authenticationCertificate(let der, let cardSerial) = response,
-        let name = remoteHolderName(inCertificate: der)
-      {
-        holder = name
-        #if DEBUG
-          print("[RemoteCardModel] publish: publishing certificate for holder=\(name)")
-          fflush(stdout)
-        #endif
-        await MainActor.run {
+      await MainActor.run {
+        setFailureText(failure)
+        if case .authenticationCertificate(let der, let cardSerial) = response,
+          let name = remoteHolderName(inCertificate: der)
+        {
+          #if DEBUG
+            print("[RemoteCardModel] publish: publishing certificate for holder=\(name)")
+            fflush(stdout)
+          #endif
           PersistentTokenRegistry.publish(certificateDER: der, cardSerial: cardSerial)
+          finishConnect(holder: name)
+        } else {
+          #if DEBUG
+            print("[RemoteCardModel] publish: no authentication certificate response or name")
+            fflush(stdout)
+          #endif
+          finishConnect(holder: nil)
         }
-      } else {
-        holder = nil
-        await discardUnusablePairing()
-        #if DEBUG
-          print("[RemoteCardModel] publish: no authentication certificate response or name")
-          fflush(stdout)
-        #endif
       }
-      finishConnect(holder: holder)
     }
 
     private func finishConnect(holder: String?) {
@@ -123,8 +131,12 @@
         print("[RemoteCardModel] finishConnect: holder=\(String(describing: holder))")
         fflush(stdout)
       #endif
-      phase = holder.map(Phase.identity) ?? .failed
-      if holder != nil { failureText = nil }
+      if let holder {
+        phase = .identity(holder)
+        failureText = nil
+      } else if self.holder == nil {
+        phase = .failed
+      }
     }
 
     private func setFailureText(_ text: String?) {
