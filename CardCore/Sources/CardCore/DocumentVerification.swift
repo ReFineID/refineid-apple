@@ -84,6 +84,9 @@ public enum DocumentVerification {
     document: Data,
     bundle: Bundle = .main
   ) throws -> DocumentReport {
+    if AsicVerification.isAsicContainer(document) {
+      return try AsicVerification.verify(container: document, bundle: bundle)
+    }
     let found: [PdfSignatureReader.FoundSignature]
     do {
       found = try PdfSignatureReader.signatures(in: document)
