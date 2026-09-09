@@ -250,11 +250,10 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
       rappPlist: rappBundle.appendingPathComponent("Contents/Info.plist"),
       discoveryPlist: discoveryBundle.appendingPathComponent("Contents/Info.plist"),
       expectedArchitectures: ["arm64"],
-      // The macOS release gates the remote card off the same way the
-      // iPhone one does (Documentation/decisions.md, 2026-08-22), so
-      // a macOS candidate carries no RAPP extension, no local-network
-      // declarations, and no server entitlement.
-      hasRapp: false,
+      // The first full version carries the remote card (owner decision
+      // 2026-09-10), so a macOS candidate carries the RAPP extension,
+      // the local-network declarations, and the server entitlement.
+      hasRapp: true,
       hasDiscovery: false
     )
   }
@@ -280,10 +279,10 @@ private func releaseArchiveLayout(at archive: URL) -> ReleaseArchiveLayout {
     rappPlist: rappBundle.appendingPathComponent("Info.plist"),
     discoveryPlist: discoveryBundle.appendingPathComponent("Info.plist"),
     expectedArchitectures: ["arm64"],
-    // The first App Store release gates the remote card off
-    // (Documentation/decisions.md, 2026-08-21), so an iOS candidate
-    // carries no RAPP extension and no local-network declarations.
-    hasRapp: false,
+    // The first full version carries the remote card (owner decision
+    // 2026-09-10), so an iOS candidate carries the RAPP extension
+    // and the local-network declarations.
+    hasRapp: true,
     hasDiscovery: true
   )
 }

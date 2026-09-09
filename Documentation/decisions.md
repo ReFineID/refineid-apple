@@ -5,6 +5,21 @@ controls iPhone scope. `Documentation/release-plan.md` controls
 macOS scope and shared security behavior. This file records the concrete
 values chosen under them.
 
+## 2026-09-10 First full version: TestFlight and Release ship every feature
+
+The month since the iPhone MVP proved the pieces live: RAPP proxy web
+authentication from Mac via iPhone, reader priority, native iOS PIN
+prompts, silent HSM operation. The documents still described the gated
+shape, so the gates open now: every configuration ships the remote
+card, card activation, macOS contactless, the visible PDF stamp, and
+the SCS loopback server. All configurations point at the development
+Info.plists and entitlements; the `Config/*-Store-*` files stay as the
+retired gated reference. The archive inspector expects `hasRapp: true`
+on both candidates. PIN discipline is unchanged: PIN 1 and PIN 2 never
+cross to the Mac, and activation never spends a card's last attempt.
+Phase E physical qualification now runs against the exact shipping
+topology and gates TestFlight distribution, not re-enabling.
+
 ## 2026-09-05 Silent iPhone HSM mode for resting card operations and conditional feedback
 
 When an iPhone acts as a remote card proxy/HSM and a Finnish ID card is already

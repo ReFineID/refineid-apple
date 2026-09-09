@@ -1,4 +1,3 @@
-!Scripts/lint-suppression-register.json
 *.dSYM
 *.dSYM.zip
 *.hmap
@@ -20,6 +19,7 @@ fastlane/report.xml
 fastlane/screenshots/**/*.png
 fastlane/test_output
 lint*.json
+!Scripts/lint-suppression-register.json
 persistent_only.json
 playground.xcworkspace
 targeted.json

@@ -1,6 +1,6 @@
 # macOS App Store release plan
 
-Last reviewed: 2026-09-05
+Last reviewed: 2026-09-10
 
 This document defines the product, security, validation, and distribution gates
 for the Swift macOS ReFineID release. [TASKS.md](../TASKS.md) is the
@@ -23,11 +23,12 @@ in its TestFlight and App Store builds. Its scope is controlled by
 Ship a small, trustworthy macOS App Store product named **ReFineID**.
 
 The application contains the CryptoTokenKit smart-card extension that macOS
-loads for a supported card, with direct contact reader signing enabled in the
-initial store release. A separate persistent-token extension for a RAPP-paired
-iPhone authorizer is fully developed in Debug and Profile configurations and
-compile-gated out of shipping store builds (`hasRapp: false`) pending physical
-qualification.
+loads for a supported card, with direct contact reader signing, contactless
+reading, card activation, and the SCS loopback signing server enabled in the
+first full version (owner decision 2026-09-10). A separate persistent-token
+extension for a RAPP-paired iPhone authorizer ships in every configuration
+(`hasRapp: true`); physical qualification runs against this exact shipping
+topology instead of Debug builds.
 
 User story is:
 
@@ -44,9 +45,13 @@ User story is:
 
 - A sandboxed, native Swift macOS application.
 - A native Swift CryptoTokenKit smart-card token extension embedded in the app.
-- In Debug/Profile (and subsequent RAPP release): a persistent-token extension
-  that delegates explicitly authorized card operations to a cryptographically
-  paired iPhone through RAPP without transferring CAN, PIN 1, or PIN 2 to the Mac.
+- A persistent-token extension that delegates explicitly authorized card
+  operations to a cryptographically paired iPhone through RAPP without
+  transferring CAN, PIN 1, or PIN 2 to the Mac.
+- Contactless card reading on a reader's contactless antenna.
+- Card activation for factory-fresh cards.
+- The SCS loopback signing server (127.0.0.1) that web pages sign through.
+- The visible PDF stamp carrying the holder's name, SATU and card ink.
 - Supported-card, reader, extension, and application version status.
 - Display of PIN1, PIN2, and PUK attempts remaining.
 - Publication of the card's PIN1 authentication identity to macOS for browser/TLS use.
@@ -71,6 +76,11 @@ User story is:
 - Safari extensions, browser shells, Internet relays, macOS NFC, telemetry,
   analytics, accounts, and cloud services.
 
+The SCS server binds only the loopback interface and serves only pages the
+holder opens; enabling it means the app requests the network-server
+entitlement and installers that touch certificate trust must describe that
+to App Review (see the review notes).
+
 Card management and PIN2 signing entered scope on 2026-08-04 (see
 `Documentation/decisions.md`); iPadOS and iOS follow the macOS
 implementation.
@@ -94,7 +104,7 @@ ReFineID.app
 `-- Contents/Resources/...
 ```
 
-Development and Profile builds embed both extensions, enabling RAPP testing:
+Every configuration embeds both extensions, enabling RAPP use and testing:
 
 ```text
 ReFineID.app (Debug/Profile)
