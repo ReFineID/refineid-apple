@@ -1,6 +1,6 @@
 # Apple release task list
 
-Last reviewed: 2026-09-05. Completed work is removed; this file holds only
+Last reviewed: 2026-09-10. Completed work is removed; this file holds only
 outcomes still required for a beta, an App Store release, or the next
 protocol milestone.
 
@@ -19,19 +19,24 @@ protocol milestone.
   Experimental iOS 16 backport dropped; platform floor is firmly 26.0 for iOS/macOS.
 - Ships: one-step NFC priming, Safari login, document signing and checking,
   PIN changes, USB-C reader signing, demo mode (virtual card starts activated).
-- Gated out of TestFlight/Release: remote card (`REFINEID_REMOTE_CARD`) and
-  activation (`FEATURE_CARD_ACTIVATION`; unactivated cards see a localized
-  refusal). Shipping configs: floor 26, iPhone-only, `nfc` required
-  capability, `Config/ReFineID-iOS-Store-Info.plist` (no Bonjour or
-  local-network keys). Debug/Profile: floor 26, both families, gates on.
-  Enforced by the archive inspector and `RappShippingConfigurationTests`.
+- First full version (owner decision 2026-09-10): every configuration
+  ships the remote card (`REFINEID_REMOTE_CARD`), card activation
+  (`FEATURE_CARD_ACTIVATION`), macOS contactless (`FEATURE_CONTACTLESS`),
+  the visible PDF stamp (`FEATURE_PDF_STAMP`), and the SCS loopback
+  server (`FEATURE_SCS`). All configurations point at the development
+  Info.plists and entitlements; the `Config/*-Store-*` files stay as the
+  retired gated reference. Shipping configs: floor 26, iPhone-only,
+  `nfc` required capability. Enforced by the archive inspector and
+  `RappShippingConfigurationTests`.
 
 ## Release blockers
 
 None. The non-UI suite (CardCoreTests and ReFineIDTests, 597 tests across 107 suites) is fully green on main.
 
-The RAPP physical qualification matrix is not a blocker here; it gates
-re-enabling `REFINEID_REMOTE_CARD` and the macOS release (Phase E below).
+The RAPP physical qualification matrix now gates the full-version
+TestFlight and the macOS release (Phase E below); the gates it used to
+hold are open since 2026-09-10, so the matrix runs against the exact
+shipping topology instead of Debug builds.
 
 ## Deterministic safety verification
 

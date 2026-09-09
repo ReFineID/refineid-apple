@@ -22,9 +22,22 @@
 #
 # A clean run prints nothing. Findings go to stderr.
 # Run from anywhere; operates on the repository.
+#
+# To bootstrap or review the suppression register after changing
+# suppressions, print the tree-derived register to stdout for human
+# review, then copy the reviewed output over
+# Scripts/lint-suppression-register.json in the same commit:
+#
+#   Scripts/lint.sh regenerate-register
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+mode="${1:-check}"
+if [ "${mode}" != "check" ] && [ "${mode}" != "regenerate-register" ]; then
+  printf 'usage: %s [check|regenerate-register]\n' "$0" >&2
+  exit 2
+fi
 
 fail() {
   local name=$1
@@ -55,18 +68,28 @@ swiftlint_log=$(
   swiftlint lint --quiet --baseline .swiftlint-baseline.json 2>&1
 ) || fail "swiftlint" "${swiftlint_log}"
 
+register_path="Scripts/lint-suppression-register.json"
+if [ "${mode}" = "check" ] && [ ! -f "${register_path}" ]; then
+  fail "lint locks" "missing ${register_path}; print a reviewed replacement with: Scripts/lint.sh regenerate-register"
+fi
+
 lock_log=$(
-  python3 - "${format_paths[@]}" 2>&1 << 'PY'
+  python3 - "${mode}" "${format_paths[@]}" 2>&1 << 'PY'
 import json, re, sys
 from collections import Counter
 from pathlib import Path
 
-register = json.loads(
-    Path("Scripts/lint-suppression-register.json").read_text(encoding="utf-8")
-)
+mode = sys.argv[1]
+argv = sys.argv[2:]
+
+register = {"swiftlint": [], "swift_format_ignore": []}
+if mode == "check":
+    register = json.loads(
+        Path("Scripts/lint-suppression-register.json").read_text(encoding="utf-8")
+    )
 
 files = []
-for raw in sys.argv[1:]:
+for raw in argv:
     path = Path(raw)
     if path.is_file():
         files.append(path)
@@ -105,6 +128,20 @@ expected_fmt = Counter()
 for entry in register["swift_format_ignore"]:
     expected_fmt[(entry["file"], entry["rule"])] += entry["count"]
 
+if mode == "regenerate-register":
+    print(json.dumps({
+        "swiftlint": [
+            {"file": key[0], "command": key[1], "rules": list(key[2]),
+             "count": count}
+            for key, count in sorted(actual_lint.items())
+        ],
+        "swift_format_ignore": [
+            {"file": key[0], "rule": key[1], "count": count}
+            for key, count in sorted(actual_fmt.items())
+        ],
+    }, indent=2, sort_keys=False))
+    sys.exit(0)
+
 failed = False
 for label, actual, expected in (
     ("swiftlint suppression", actual_lint, expected_lint),
@@ -129,3 +166,7 @@ if failed:
     sys.exit(1)
 PY
 ) || fail "lint locks" "${lock_log}"
+
+if [ "${mode}" = "regenerate-register" ]; then
+  printf '%s\n' "${lock_log}"
+fi

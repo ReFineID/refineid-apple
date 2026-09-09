@@ -44,10 +44,13 @@
 //       restore the network-server entitlement, which shipping builds
 //       do not carry.
 //
-// Flags are space-separated. To ship one again:
-//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS
+// Flags are space-separated. The full TestFlight carries all three:
+// contactless macOS reading, the visible PDF stamp, and the SCS
+// loopback signing server (owner decision 2026-09-10: first full
+// version; the store candidate builds from the TestFlight
+// configuration, so it carries them too).
 
-REFINEID_FEATURES =
+REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS
 
 // The local card: this build talks to a card the device itself holds,
 // over its own antenna. On by default, because every shipping iPhone

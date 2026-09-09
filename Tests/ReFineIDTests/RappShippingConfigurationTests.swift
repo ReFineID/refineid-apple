@@ -70,39 +70,45 @@ internal struct RappShippingConfigurationTests {
     #expect(!project.contains("ReFineIDRappTokenExtension.appex */; platformFilters"))
   }
 
-  @Test("Shipping configurations gate the remote card out of the iOS app")
-  internal func shippingConfigurationsGateRemoteCard() throws {
+  @Test("Shipping configurations carry the full version with the remote card")
+  internal func shippingConfigurationsCarryRemoteCard() throws {
+    // Owner decision 2026-09-10: the first full version ships the
+    // remote card in every configuration. The RAPP extension is no
+    // longer excluded from any embed phase, and every configuration
+    // points at the development Info.plists and entitlements that
+    // carry the local-network declarations and the relay listener.
+    // The store files stay in the repository as the retired gated
+    // reference; nothing points at them.
     let project = try String(
       contentsOf: Self.root.appending(path: "ReFineID.xcodeproj/project.pbxproj"),
       encoding: .utf8)
-    // The RAPP extension is excluded from the embed phase of both
-    // shipping configurations, and both point the iOS app at the store
-    // Info.plist that carries no local-network declarations.
     func occurrences(of needle: String) -> Int {
       project.components(separatedBy: needle).count - 1
     }
-    #expect(occurrences(of: "ReFineIDRappTokenExtension.appex,") == 2)
+    #expect(occurrences(of: "ReFineIDRappTokenExtension.appex,") == 0)
     #expect(
       occurrences(
-        of: "INFOPLIST_FILE = \"Config/ReFineID-iOS-Store-Info.plist\";") == 2)
+        of: "INFOPLIST_FILE = \"Config/ReFineID-iOS-Store-Info.plist\";") == 0)
+    #expect(
+      occurrences(
+        of: "INFOPLIST_FILE = \"Config/ReFineID-iOS-Info.plist\";") == 4)
 
-    // The macOS store shape mirrors the iOS one: both shipping
-    // configurations point the Mac app at the store Info.plist and
-    // entitlements without the remote card's declarations, while Debug
-    // and Profile keep the development files.
+    // The macOS shape mirrors the iOS one: all four configurations
+    // point the Mac app at the development Info.plist and
+    // entitlements with the remote card's declarations.
     #expect(
       occurrences(
-        of: "\"INFOPLIST_FILE[sdk=macosx*]\" = \"Config/ReFineID-Store-Info.plist\";") == 2)
+        of: "\"INFOPLIST_FILE[sdk=macosx*]\" = \"Config/ReFineID-Store-Info.plist\";") == 0)
     #expect(
       occurrences(
-        of: "\"INFOPLIST_FILE[sdk=macosx*]\" = \"Config/ReFineID-Info.plist\";") == 2)
+        of: "\"INFOPLIST_FILE[sdk=macosx*]\" = \"Config/ReFineID-Info.plist\";") == 4)
     #expect(
       occurrences(
         of: "\"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]\" = \"Config/ReFineID-Store.entitlements\";")
-        == 2)
+        == 0)
     #expect(
       occurrences(
-        of: "\"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]\" = Config/ReFineID.entitlements;") == 2)
+        of: "\"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]\" = Config/ReFineID.entitlements;") == 4)
 
     let features = try String(
       contentsOf: Self.root.appending(path: "Config/Features.xcconfig"),
@@ -119,91 +125,34 @@ internal struct RappShippingConfigurationTests {
       features.contains("REFINEID_ACTIVATION_FEATURE[config=TestFlight] = FEATURE_CARD_ACTIVATION"))
     #expect(
       features.contains("REFINEID_ACTIVATION_FEATURE[config=Release] = FEATURE_CARD_ACTIVATION"))
-  }
 
-  @Test("The store Info.plist differs from development by exactly the gates")
-  internal func storeInfoPlistShape() throws {
-    let development = try Self.plist("Config/ReFineID-iOS-Info.plist")
-    let store = try Self.plist("Config/ReFineID-iOS-Store-Info.plist")
-
-    let storeNfcUsage = try #require(store["NFCReaderUsageDescription"] as? String)
-    let developmentNfcUsage = try #require(development["NFCReaderUsageDescription"] as? String)
-    #expect(!storeNfcUsage.localizedCaseInsensitiveContains("activation"))
-    #expect(developmentNfcUsage.localizedCaseInsensitiveContains("activation"))
-
-    let capabilities = try #require(store["UIRequiredDeviceCapabilities"] as? [String])
-    #expect(capabilities.contains("arm64"))
-    #expect(development["UIRequiredDeviceCapabilities"] == nil)
-
-    // Everything else stays word for word, so the two files cannot
-    // quietly drift apart.
-    for key in [
-      "CFBundleLocalizations",
-      "ITSAppUsesNonExemptEncryption",
-      "NSAppTransportSecurity",
-      "NSCameraUsageDescription",
-      "UIApplicationShortcutItems",
-      "com.apple.developer.nfc.readersession.iso7816.select-identifiers",
-    ] {
-      let left = development[key] as? NSObject
-      let right = store[key] as? NSObject
-      #expect(left == right, "\(key) differs between the two Info.plists")
-    }
-    let unexplained = Set(development.keys)
-      .symmetricDifference(store.keys)
-      .subtracting([
-        "NSLocalNetworkUsageDescription",
-        "NSBonjourServices",
-        "UIRequiredDeviceCapabilities",
-        "NSBluetoothAlwaysUsageDescription",
-        "NSBluetoothPeripheralUsageDescription",
-      ])
-    #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
-  }
-
-  @Test("The macOS store Info.plist and entitlements differ by exactly the gates")
-  internal func macStoreShape() throws {
-    let development = try Self.plist("Config/ReFineID-Info.plist")
-    let store = try Self.plist("Config/ReFineID-Store-Info.plist")
-
-    // What the gate removes: the remote card's network declarations.
-    #expect(store["NSLocalNetworkUsageDescription"] == nil)
-    #expect(store["NSBonjourServices"] == nil)
-
-    // Everything else stays word for word, so the two files cannot
-    // quietly drift apart.
-    for key in store.keys {
-      let left = development[key] as? NSObject
-      let right = store[key] as? NSObject
-      #expect(left == right, "\(key) differs between the two Info.plists")
-    }
-    let unexplained = Set(development.keys)
-      .symmetricDifference(store.keys)
-      .subtracting([
-        "NSLocalNetworkUsageDescription",
-        "NSBonjourServices",
-        "NSBluetoothAlwaysUsageDescription",
-      ])
-    #expect(unexplained.isEmpty, "unexplained keys: \(unexplained.sorted())")
-
-    // The entitlements lose exactly the listener: the server side exists
-    // only for the remote card's relay, while the client side stays for
-    // timestamps and revocation checks.
-    let developmentEntitlements = try Self.plist("Config/ReFineID.entitlements")
-    let storeEntitlements = try Self.plist("Config/ReFineID-Store.entitlements")
-    #expect(storeEntitlements["com.apple.security.network.server"] == nil)
-    #expect(storeEntitlements["com.apple.security.network.client"] as? Bool == true)
-    for key in storeEntitlements.keys {
-      #expect(
-        storeEntitlements[key] as? NSObject == developmentEntitlements[key] as? NSObject,
-        "\(key) differs between the two entitlements files")
-    }
-    let unexplainedEntitlements = Set(developmentEntitlements.keys)
-      .symmetricDifference(storeEntitlements.keys)
-      .subtracting(["com.apple.security.network.server"])
+    // The full version enables contactless reading, the visible PDF
+    // stamp, and the SCS loopback server in every configuration.
     #expect(
-      unexplainedEntitlements.isEmpty,
-      "unexplained entitlements: \(unexplainedEntitlements.sorted())")
+      features.contains(
+        "REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS"))
+  }
+
+  @Test("Retired store files are referenced by no build configuration")
+  internal func retiredStoreFilesAreUnreferenced() throws {
+    // Owner decision 2026-09-10: the `Config/*-Store-*` files are the
+    // retired gated reference; every configuration ships the development
+    // files. This test fails if any configuration is pointed back at
+    // them, so the gates cannot silently return. It replaces the retired
+    // store-vs-development shape comparisons, which compared files no
+    // configuration consumes and which were already red on main from
+    // document-type drift (`CFBundleDocumentTypes`,
+    // `UTImportedTypeDeclarations`).
+    let project = try String(
+      contentsOf: Self.root.appending(path: "ReFineID.xcodeproj/project.pbxproj"),
+      encoding: .utf8)
+    func assignments(of path: String) -> Int {
+      project.components(separatedBy: "= \"\(path)\";").count - 1
+        + project.components(separatedBy: "= \(path);").count - 1
+    }
+    #expect(assignments(of: "Config/ReFineID-iOS-Store-Info.plist") == 0)
+    #expect(assignments(of: "Config/ReFineID-Store-Info.plist") == 0)
+    #expect(assignments(of: "Config/ReFineID-Store.entitlements") == 0)
   }
 
   @Test("RAPP network declarations are present in shipping containers")
@@ -249,9 +198,9 @@ internal struct RappShippingConfigurationTests {
     #expect(source.contains("fi.refineid.ReFineID.rapp-token"))
     #expect(source.contains("RAPP and direct-reader entitlements are separated"))
     #expect(!source.contains("network entitlements match the gated-relay shape"))
-    // Neither candidate carries the remote card: no RAPP extension, no
-    // local-network declarations, and on macOS no server entitlement.
-    #expect(source.components(separatedBy: "hasRapp: false").count - 1 == 2)
+    // Both candidates carry the remote card: the RAPP extension, the
+    // local-network declarations, and on macOS the server entitlement.
+    #expect(source.components(separatedBy: "hasRapp: true").count - 1 == 2)
     #expect(source.contains("NSBonjourServices present without the remote card"))
     #expect(source.contains("network.server entitlement present without the remote card"))
     #expect(source.contains("iPhone-only artifact requiring iOS 26.0 and an NFC antenna"))
