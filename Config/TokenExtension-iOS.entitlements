@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- iOS token-extension entitlements: one keychain group, nothing else.
+
+     An app extension carries its own application-identifier, so by
+     default it addresses its own private keychain group and cannot see a
+     single item the containing app wrote. Everything the contactless
+     path depends on is written by the app and read here - the primed
+     identity (CardCore/PrimeStore), the explicitly stored credentials
+     (CardCore/CardCredentialStore) and the transport preference
+     (CardCore/CardTransportStore). Without this group PrimeStore.read
+     returns nil for every card, createToken refuses with primeMissing,
+     and no contactless login is possible at all.
+
+     The group is the app's own, and it must stay FIRST in the app's
+     array in Config/ReFineID-iOS.entitlements: an item added without an
+     explicit kSecAttrAccessGroup lands in the first group of the
+     writer's entitlement, so reordering that array silently moves every
+     write out of this extension's reach.
+
+     Nothing else is granted. The minting and signing path itself was
+     proven with no entitlements here, and this adds no capability beyond
+     reading what the app already stored on this same device. -->
+<dict>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)fi.refineid.ReFineID</string>
+	</array>
+</dict>
+</plist>

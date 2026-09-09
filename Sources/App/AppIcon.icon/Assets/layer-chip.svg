@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<g transform="matrix(1,0,0,-1,0,1024)">
+	<defs>
+		<clipPath id="pad">
+			<rect x="240" y="520" width="150" height="120" rx="35"/>
+		</clipPath>
+	</defs>
+	<!-- gold contact pad -->
+	<rect x="240" y="520" width="150" height="120" rx="35" fill="#D9B96B"/>
+	<g clip-path="url(#pad)" fill="none" stroke="#77602F" stroke-width="6">
+		<!-- two full-width horizontal band lines (top, bottom) -->
+		<path d="M 240 610 H 390 M 240 550 H 390"/>
+		<!-- central contact ring: two half-arcs back to the start point -->
+		<path d="M 285 580 A 30 30 0 1 0 345 580 A 30 30 0 1 0 285 580"/>
+		<!-- short verticals joining each card edge to the ring (top, bottom) -->
+		<path d="M 315 640 V 610 M 315 550 V 520"/>
+		<!-- four corner dome arcs, band line to card edge, mirrored on both axes -->
+		<path d="M 275 610 Q 285 640 305 640 M 355 610 Q 345 640 325 640 M 275 550 Q 285 520 305 520 M 355 550 Q 345 520 325 520"/>
+		<!-- mid contact lines from each card edge to the ring (left, right) -->
+		<path d="M 240 580 H 285 M 345 580 H 390"/>
+		<!-- the pad edge, on top of the engraving -->
+		<rect x="240" y="520" width="150" height="120" rx="35"/>
+		<!-- index dots, one centred in each band zone -->
+		<circle cx="315" cy="625" r="5" fill="#77602F" stroke="none"/>
+		<circle cx="315" cy="535" r="5" fill="#77602F" stroke="none"/>
+	</g>
+</g>
+</svg>

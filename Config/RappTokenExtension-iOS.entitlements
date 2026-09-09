@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- iOS persistent-token entitlements: one keychain group, nothing else.
+
+     The requester client inside this extension reads the RAPP pair
+     records the containing app persisted (CardCore/RappDeviceVault).
+     Without the shared group the vault answers empty, the client
+     refuses with noActivePair, and no delegated signature is possible.
+
+     The group must stay FIRST in the app's array in
+     Config/ReFineID-iOS.entitlements for the same reason recorded in
+     Config/TokenExtension-iOS.entitlements. -->
+<dict>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)fi.refineid.ReFineID</string>
+	</array>
+</dict>
+</plist>

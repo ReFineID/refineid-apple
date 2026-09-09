@@ -1,0 +1,34 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+
+// The cases are transcribed in the order the formal model lists them, so the
+// tables read line for line against the document. Alphabetising them would
+// break the correspondence the bidirectional conformance test protects.
+// swiftlint:disable sorted_enum_cases
+
+/// Session component state.
+///
+/// A session instance exists per connection attempt; `absent` means no live
+/// instance for the pairing, and `closed` is terminal for the instance.
+internal enum SessionState: String, CaseIterable, Sendable {
+  case absent = "absent"
+  /// Requester only.
+  case connecting = "connecting"
+  case authenticating = "authenticating"
+  case healthy = "healthy"
+  case checking = "checking"
+  case closing = "closing"
+  case closed = "closed"
+
+  /// Whether the session can still carry authenticated traffic.
+  internal var carriesAuthenticatedTraffic: Bool {
+    switch self {
+    case .healthy, .checking:
+      true
+
+    case .absent, .connecting, .authenticating, .closing, .closed:
+      false
+    }
+  }
+}
+
+// swiftlint:enable sorted_enum_cases

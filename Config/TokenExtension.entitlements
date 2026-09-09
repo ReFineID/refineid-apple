@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- The direct-reader CryptoTokenKit extension is sandboxed and needs
+     smart-card access, and nothing else. RAPP owns a separate persistent-token
+     extension, so this driver never receives a network entitlement. -->
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.smartcard</key>
+	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.fi.refineid.RefineID</string>
+	</array>
+</dict>
+</plist>

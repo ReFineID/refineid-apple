@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Export options for an App Store Connect submission.
+
+     Used as:
+
+       xcodebuild -exportArchive \
+         -archivePath build/ReFineID.xcarchive \
+         -exportOptionsPlist Config/ExportOptions-AppStore.plist \
+         -exportPath build/export
+
+     Two of these values are decisions rather than defaults.
+
+     manageAppVersionAndBuildNumber is false because Xcode otherwise
+     picks the build number itself at export, and this project does not
+     let it. CFBundleVersion is the ten-minute bucket of Helsinki local
+     time the build was cut in (release-plan.md, "Calendar versioning"),
+     which is a statement about when the artifact came into existence.
+     A number Xcode invented at export time says nothing, and worse, it
+     would disagree with the tag naming the same commit.
+
+     uploadSymbols is true so Apple can symbolicate crash reports. That
+     is not telemetry and adds nothing to the app: the dSYMs travel with
+     the upload, not with the binary, and nothing in the shipped product
+     reports anything. TASKS.md section 15 commits to watching crash
+     reports, which is unreadable without this.
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+	<key>teamID</key>
+	<string>4ZJC3SFJR2</string>
+	<key>destination</key>
+	<string>export</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
+	<key>uploadSymbols</key>
+	<true/>
+</dict>
+</plist>

@@ -1,0 +1,107 @@
+// Build-time feature flags: one place to turn a feature on or off.
+//
+// REFINEID_FEATURES feeds SWIFT_ACTIVE_COMPILATION_CONDITIONS through
+// Version.xcconfig, which every configuration inherits. A flag absent
+// here compiles its UI entry points away; the code beneath them stays
+// built and tested either way, so turning a feature back on is this
+// one line and nothing else.
+//
+//   FEATURE_CONTACTLESS
+//       Contactless card reading on macOS: the CAN entry that
+//       unseals a card on a contactless reader, and its Settings
+//       toggle. Out of the first App Store release by decision
+//       (Documentation/decisions.md, 2026-08-11): the access number
+//       reaches the token driver through a shared app-group
+//       container, and macOS creates a ~/Library/Group Containers
+//       folder the moment that group is touched. Off, no such folder
+//       exists and the app-group entitlement stays out of
+//       Config/ReFineID.entitlements and Config/TokenExtension.entitlements.
+//       macOS only: on iPhone, built-in NFC is a required production
+//       transport and is not gated by this flag.
+//
+//       The flag alone is not enough to test contactless locally: the
+//       access-number channel needs the app-group entitlement, so a
+//       local build must restore com.apple.security.application-groups
+//       (4ZJC3SFJR2.fi.refineid) on both targets as well as setting
+//       the flag. The flag without the entitlement compiles the entry
+//       points but the channel finds no group container and the mint
+//       fails.
+//
+//   FEATURE_PDF_STAMP
+//       The visible PDF stamp: the CAN-gated mark carrying the
+//       holder's name, SATU and card ink. Off, every signature stays
+//       invisible - the non-rendering signature structures only - and
+//       no stamp UI is offered.
+//
+//   FEATURE_SCS
+//       The Signature Creation Service: the loopback HTTPS server
+//       (127.0.0.1:53952, DVV spec v1.3) that web pages sign
+//       through. Out of the first App Store release by decision
+//       (Documentation/decisions.md, 2026-08-11): to serve HTTPS it
+//       modifies the user's certificate trust settings, which is a
+//       review risk kept out of the binary entirely. Off, no SCS socket
+//       is bound and no trust is touched. A local build testing it must
+//       restore the network-server entitlement, which shipping builds
+//       do not carry.
+//
+// Flags are space-separated. To ship one again:
+//   REFINEID_FEATURES = FEATURE_PDF_STAMP FEATURE_CONTACTLESS FEATURE_SCS
+
+REFINEID_FEATURES =
+
+// The local card: this build talks to a card the device itself holds,
+// over its own antenna. On by default, because every shipping iPhone
+// and Mac has that hardware.
+REFINEID_LOCAL_CARD_FEATURE = REFINEID_LOCAL_CARD
+
+// REFINEID_REMOTE_CARD
+//     The remote card: pairing this device with another over RAPP, and
+//     everything a pairing makes possible.
+REFINEID_REMOTE_CARD_FEATURE = REFINEID_REMOTE_CARD
+REFINEID_REMOTE_CARD_FEATURE[config=TestFlight] = REFINEID_REMOTE_CARD
+REFINEID_REMOTE_CARD_FEATURE[config=Release] = REFINEID_REMOTE_CARD
+
+// FEATURE_CARD_ACTIVATION
+//     Taking a factory-fresh card into use: the activation form.
+REFINEID_ACTIVATION_FEATURE = FEATURE_CARD_ACTIVATION
+REFINEID_ACTIVATION_FEATURE[config=TestFlight] = FEATURE_CARD_ACTIVATION
+REFINEID_ACTIVATION_FEATURE[config=Release] = FEATURE_CARD_ACTIVATION
+
+// REFINEID_SLIM_RELAY
+//     Carries a borrowed card over one request and one answer instead
+//     of the session machinery: the pairing's own cipher settles
+//     ordering and replay, and the request identifier settles
+//     at-most-once. Off by default while the established path is what
+//     ships; on, both peers must carry it, because they no longer speak
+//     the same thing on the wire.
+//
+//   xcodebuild ... REFINEID_SLIM_RELAY_FEATURE=REFINEID_SLIM_RELAY
+REFINEID_SLIM_RELAY_FEATURE =
+
+// REFINEID_STREAM_TRANSPORT
+//     Carries the relay over a published service and a dialled port
+//     instead of the nearby peer framework. The requester publishes and
+//     listens; the card holder finds it and dials. Measured need: between
+//     a device on one system generation and a device on another, the
+//     nearby framework receives the service record and never hands the
+//     app its peer, while a direct connection to the same port succeeds.
+//     Both peers must carry it.
+//
+//     Half of it lives in the CardCore package, which does not inherit
+//     these conditions: a build that sets the line below alone pairs over
+//     the stream and then answers a browser over the nearby framework. A
+//     build for a device sets the whole condition list instead, keeping
+//     what the configuration already carries:
+//
+//   xcodebuild ... \
+//     SWIFT_ACTIVE_COMPILATION_CONDITIONS="DEBUG REFINEID_LOCAL_CARD REFINEID_STREAM_TRANSPORT"
+//
+//   xcodebuild ... REFINEID_STREAM_TRANSPORT_FEATURE=REFINEID_STREAM_TRANSPORT
+REFINEID_STREAM_TRANSPORT_FEATURE = REFINEID_STREAM_TRANSPORT
+
+// A developer's own flags, out of the repository: the file is
+// optional, ignored by git, and an assignment there replaces the
+// default above on that machine only.
+#include? "LocalFeatures.xcconfig"
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(REFINEID_FEATURES) $(REFINEID_IOS_FLOOR_FEATURE) $(REFINEID_LOCAL_CARD_FEATURE) $(REFINEID_REMOTE_CARD_FEATURE) $(REFINEID_ACTIVATION_FEATURE) $(REFINEID_SLIM_RELAY_FEATURE) $(REFINEID_STREAM_TRANSPORT_FEATURE)

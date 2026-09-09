@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- The discovery extension is a sandboxed CryptoTokenKit extension and
+     needs smart-card access to be asked about a card at all; nothing else.
+     Its own file, not the minting extension's, so that a grant one half
+     needs is never handed to the other by accident. -->
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.smartcard</key>
+	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.fi.refineid.RefineID</string>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- iOS discovery-extension entitlements: one keychain group, and only so
+     this half can say that it ran.
+
+     This half declares the AID that ctkd polls with and refuses every
+     createToken. It reads no prime, holds no card session and stores no
+     credential, and it is granted nothing that would let it. The group
+     below exists for exactly one write: the trace line in
+     DiscoveryTokenDriver.
+
+     That line is worth the grant. An app extension's logging is invisible
+     from outside on iOS 26 - `log stream --device` is gone and
+     `log collect` fails - so "ctkd polled a card with our AID" is
+     otherwise unobservable, and a login that failed before discovery is
+     indistinguishable from one that failed at the mint. The trace is the
+     only channel the three processes share.
+
+     The grant is the app's own group, which is also the minting
+     extension's, so this binary could in principle read the primed
+     identity too. It does not. The stronger defence would be a second,
+     dedicated group, which cannot be addressed without hard-coding the
+     team prefix in source - an item's access group must be named in full.
+     The trade is recorded here rather than left to be discovered.
+
+     The group must stay FIRST in the app's array in
+     Config/ReFineID-iOS.entitlements: an item added without an explicit
+     kSecAttrAccessGroup lands in the first group of the writer's
+     entitlement, so reordering that array silently moves every write out
+     of reach of both extensions. -->
+<dict>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)fi.refineid.ReFineID</string>
+	</array>
+</dict>
+</plist>

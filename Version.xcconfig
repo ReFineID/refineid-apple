@@ -1,0 +1,60 @@
+// The version of ReFineID, in the one place that defines it.
+//
+// Apple splits a release into two numbers with different jobs, and both
+// are build settings -- which default to per target, per configuration.
+// Left in the project file they became the same value written twenty-four
+// times, so every release rewrote twenty-four lines and dirtied a file
+// that a release is supposed to never touch. They live here instead, and
+// the project's build configurations inherit them.
+//
+//   MARKETING_VERSION (CFBundleShortVersionString) = YY.M.D
+//       What a person reads. The release date, no zero padding.
+//
+//   CURRENT_PROJECT_VERSION (CFBundleVersion) = H * 10 + M / 10
+//       What App Store Connect orders builds by. The ten-minute bucket
+//       of UTC the build was cut in, so two builds on one day always
+//       increase. UTC, not local time: local time repeats an hour at
+//       the autumn daylight-saving fall-back, which could make a build
+//       number collide or go backwards, and it depends on the build
+//       machine's zone. UTC has neither problem.
+//
+// Scripts/stamp-version.sh rewrites the two settings below and nothing
+// else. The Swift release manager's candidate command overrides both on the
+// xcodebuild command line, which wins over this file, so a release never edits it.
+
+#include "Config/Features.xcconfig"
+
+// The Apple Team the app and its extensions sign under, in one place
+// rather than repeated in every target's build settings. It is a
+// public identifier - it is stamped into every signed binary - so it
+// belongs here where a fork changes it once.
+// The oldest systems the app runs on, in one place rather than repeated
+// in every target. The floor is iOS 26 and macOS 26: the NFC smart-card
+// slot and CryptoTokenKit's 26 APIs arrived in 26.0. Point releases
+// (26.5, ...) are the same product. Debug, Profile, TestFlight, and
+// Release share it.
+IPHONEOS_DEPLOYMENT_TARGET = 26.0
+MACOSX_DEPLOYMENT_TARGET = 26.0
+
+// What the store artifact demands matches the tree. The shipping
+// configurations are iPhone alone: every feature the first release
+// carries needs the NFC smart-card slot, which exists on no iPad.
+// Debug and Profile keep both families so an iPad on 26 can still
+// be a requester. The archive inspector holds a candidate to these
+// numbers, so a wrongly cut artifact fails before it is uploaded.
+IPHONEOS_DEPLOYMENT_TARGET[config=TestFlight] = 26.0
+IPHONEOS_DEPLOYMENT_TARGET[config=Release] = 26.0
+
+// The same fact as a compilation condition. Every configuration is
+// floor 26, so the 26 spelling is always on. Defined beside the
+// floor so the two can never disagree.
+REFINEID_IOS_FLOOR_FEATURE = REFINEID_IOS_FLOOR_26
+
+TARGETED_DEVICE_FAMILY = 1,2
+TARGETED_DEVICE_FAMILY[config=TestFlight] = 1,2
+TARGETED_DEVICE_FAMILY[config=Release] = 1,2
+
+DEVELOPMENT_TEAM = 4ZJC3SFJR2
+
+MARKETING_VERSION = 26.9.9
+CURRENT_PROJECT_VERSION = 104

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- The discovery half of the CryptoTokenKit pair. Its only job is to
+     declare com.apple.ctk.aid so that ctkd has a select-identifier to poll
+     contactless cards with; it mints no token. The minting half is
+     Config/TokenExtension-Info.plist, which declares NO AID, because a
+     driver that declares one stops being invoked for the app's own slot.
+     Two roles, two extensions, two class-ids. See
+     Sources/DiscoveryExtension/DiscoveryTokenDriver.swift. -->
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<!-- A0000002471001 is the ICAO eMRTD LDS application. A Finnish
+			     ID card genuinely implements it - the card is a travel
+			     document - and, unlike the PKCS#15 application, it is
+			     selectable over the contactless interface BEFORE PACE has
+			     run. PKCS#15 answers SW=6982 until then, so polling with
+			     it would surface nothing. -->
+			<key>com.apple.ctk.aid</key>
+			<string>A0000002471001</string>
+			<key>com.apple.ctk.class-id</key>
+			<string>fi.refineid.ReFineID.discovery</string>
+			<key>com.apple.ctk.driver-class</key>
+			<string>$(PRODUCT_MODULE_NAME).DiscoveryTokenDriver</string>
+			<key>com.apple.ctk.token-type</key>
+			<string>smartcard</string>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.ctk-tokens</string>
+	</dict>
+</dict>
+</plist>

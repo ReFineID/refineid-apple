@@ -1,0 +1,311 @@
+# SwiftLint owns defects. Gate: `swiftlint lint` with strict: true.
+# Baseline: .swiftlint-baseline.json. New findings fail.
+#
+# Not `--enable-all-rules`: it ignores disabled_rules and this carve
+# register. Opt-in rules are enumerated instead.
+#
+# Carve register -- opt-in rules omitted:
+#
+# Owned by swift-format:
+#
+# contrasted_opening_brace
+#
+# swift-format emits K&R same-line braces.
+#
+# vertical_whitespace_between_cases
+#
+# swift-format owns case spacing.
+#
+# conditional_returns_on_newline
+#
+# swift-format keeps `guard ... else { return }`.
+#
+# multiline_arguments_brackets
+#
+# swift-format owns call-bracket placement.
+#
+# multiline_arguments
+#
+# swift-format owns how call arguments wrap.
+#
+# multiline_call_arguments
+#
+# swift-format owns how call arguments pack across lines.
+#
+# indentation_width
+#
+# swift-format owns indentation, including continuation depth.
+#
+# vertical_whitespace_opening_braces
+#
+# swift-format owns whitespace after `{`.
+#
+# vertical_whitespace_closing_braces
+#
+# swift-format owns whitespace before `}`.
+#
+# let_var_whitespace
+#
+# swift-format owns blank lines around declarations.
+#
+# pattern_matching_keywords
+#
+# swift-format emits `case .a(let x)`; this rule rewrites `case let .a(x)`.
+#
+# strict_fileprivate
+#
+# swift-format moves extension ACLs onto members as `fileprivate`.
+#
+# extension_access_modifier
+#
+# opposite rewrite; kept no_extension_access_modifier.
+#
+# trailing_closure
+#
+# swift-format labels every closure; this rule's fixer strips the label.
+#
+# Default rules with the same fight live in disabled_rules:
+# opening_brace, closure_parameter_position, trailing_comma.
+#
+# Framework / idiom mismatch:
+#
+# prefer_nimble
+#
+# tests use Swift Testing, not Nimble.
+#
+# nimble_operator
+#
+# Nimble-only operator rule.
+#
+# prefixed_toplevel_constant
+#
+# k-prefix Apple abandoned in Swift 3; contradicts AlwaysUseLowerCamelCase.
+#
+# Mutually exclusive with a kept rule:
+#
+# explicit_type_interface
+#
+# contradicts redundant_type_annotation.
+#
+# redundant_string_enum_value
+#
+# contradicts explicit_enum_raw_value. Keep explicit wire values.
+#
+# Counterproductive:
+#
+# required_deinit
+#
+# empty deinit on every class conflicts with no_empty_block.
+#
+# Analyzer rules (capture_variable, explicit_self, typesafe_array_init,
+# unused_declaration, unused_import) need `swiftlint analyze` with a
+# compile database. Future gate work, not enabled here.
+
+strict: true
+
+# Empty on purpose: SwiftLint's default i / id / x / y / z list is not used.
+identifier_name:
+  excluded: []
+
+# Default file_header forbids "Copyright" (Xcode auto-headers). Point it
+# at the header this tree uses.
+file_header:
+  required_pattern: '// Copyright \d{4} Petri Koistinen'
+
+# Typing discipline (Documentation/typing-discipline.md).
+custom_rules:
+  raw_byte_array_in_api:
+    name: "Raw [UInt8] across an API boundary"
+    regex: '(?:func|init)\b[^{}\n]*\[UInt8\]'
+    excluded:
+      # Sanctioned bytes<->domain boundaries; tests.
+      - ".*/ZeroizingDigitStore\\.swift"
+      - ".*/ApplicationIdentifier\\.swift"
+      - ".*/EcdsaSignature\\.swift"
+      - ".*/Tests/.*"
+    message: >
+      A function takes or returns a raw [UInt8] across an API boundary.
+      Wrap it in a domain type so strong typing is not discarded at the
+      boundary -- the only sanctioned raw boundary is a domain type's own
+      validating initializer. See Documentation/typing-discipline.md.
+    severity: error
+
+  unexplained_hex:
+    name: "Unexplained hex literal"
+    regex: '\b0x[0-9A-Fa-f_]+\b'
+    excluded:
+      # Named protocol values; DER tags; tests; fixtures.
+      - ".*/CardCore/Sources/CardCore/Values/.*"
+      - ".*/EcdsaSignature\\.swift"
+      - ".*/Tests/.*"
+      - ".*/TestVectors/.*"
+    message: >
+      Hex literals are allowed only inside named protocol-value definitions
+      in dedicated files or provenance-marked test-vector files. Give the
+      value a named, documented home. See Documentation/release-plan.md section 4.4.
+    severity: error
+
+  no_nuclear_lint_suppression:
+    name: "Nuclear lint suppression"
+    regex: 'swiftlint:disable(?::(?:next|this|previous))?\s+all\b'
+    message: >
+      Do not disable all SwiftLint rules. Fix the finding, or add a
+      named suppression to Scripts/lint-suppression-register.json.
+    severity: error
+
+  no_format_ignore_file:
+    name: "File-level swift-format ignore"
+    regex: 'swift-format-ignore-file'
+    message: >
+      Do not ignore swift-format for a whole file. Fix the layout.
+    severity: error
+
+# Default layout rules that fight swift-format, plus the enum-raw-value
+# pair kept as explicit_enum_raw_value.
+disabled_rules:
+  - opening_brace
+  - closure_parameter_position
+  - trailing_comma
+  - redundant_string_enum_value
+
+opt_in_rules:
+  - accessibility_label_for_image
+  - accessibility_trait_for_button
+  - anonymous_argument_in_multiline_closure
+  - array_init
+  - async_without_await
+  - attributes
+  - balanced_xctest_lifecycle
+  - closure_body_length
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - comma_inheritance
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - contains_over_range_nil_comparison
+  - convenience_type
+  - direct_return
+  - discarded_notification_center_observer
+  - discouraged_assert
+  - discouraged_default_parameter
+  - discouraged_none_name
+  - discouraged_object_literal
+  - discouraged_optional_boolean
+  - discouraged_optional_collection
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - empty_xctest_method
+  - enum_case_associated_values_count
+  - expiring_todo
+  - explicit_acl
+  - explicit_enum_raw_value
+  - explicit_init
+  - explicit_top_level_acl
+  - fallthrough
+  - fatal_error_message
+  - file_header
+  - file_name
+  - file_name_no_space
+  - file_types_order
+  - final_test_case
+  - first_where
+  - flatmap_over_map_reduce
+  - force_unwrapping
+  - function_default_parameter_at_end
+  - ibinspectable_in_extension
+  - identical_operands
+  - implicit_return
+  - implicitly_unwrapped_optional
+  - incompatible_concurrency_annotation
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - legacy_objc_type
+  - legacy_uigraphics_function
+  - literal_expression_end_indentation
+  - local_doc_comment
+  - lower_acl_than_parent
+  - missing_docs
+  - modifier_order
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - multiline_parameters_brackets
+  - no_empty_block
+  - no_extension_access_modifier
+  - no_grouping_extension
+  - no_magic_numbers
+  - non_overridable_class_declaration
+  - nslocalizedstring_key
+  - nslocalizedstring_require_bundle
+  - number_separator
+  - object_literal
+  - one_declaration_per_file
+  - operator_usage_whitespace
+  - optional_enum_case_matching
+  - overridden_super_call
+  - override_in_extension
+  - period_spacing
+  - prefer_asset_symbols
+  - prefer_condition_list
+  - prefer_key_path
+  - prefer_self_in_static_references
+  - prefer_self_type_over_type_of_self
+  - prefer_zero_over_explicit_init
+  - private_action
+  - private_outlet
+  - private_subject
+  - private_swiftui_state
+  - prohibited_interface_builder
+  - prohibited_super_call
+  - quick_discouraged_call
+  - quick_discouraged_focused_test
+  - quick_discouraged_pending_test
+  - raw_value_for_camel_cased_codable_enum
+  - reduce_into
+  - redundant_final
+  - redundant_nil_coalescing
+  - redundant_self
+  - redundant_type_annotation
+  - required_enum_case
+  - return_value_from_void_function
+  - self_binding
+  - shorthand_argument
+  - shorthand_optional_binding
+  - single_test_class
+  - sorted_enum_cases
+  - sorted_first_last
+  - sorted_imports
+  - static_operator
+  - strong_iboutlet
+  - superfluous_else
+  - switch_case_on_newline
+  - test_case_accessibility
+  - toggle_bool
+  - type_contents_order
+  - unavailable_function
+  - unhandled_throwing_task
+  - unneeded_escaping
+  - unneeded_parentheses_in_closure_argument
+  - unneeded_throws_rethrows
+  - unowned_variable_capture
+  - untyped_error_in_catch
+  - unused_parameter
+  - variable_shadowing
+  - vertical_parameter_alignment_on_call
+  - weak_delegate
+  - xct_specific_matcher
+  - yoda_condition
+
+# Build artefacts and generator scripts. Worktrees duplicate the tree.
+excluded:
+  - "**/.build"
+  - "**/.swiftpm"
+  - "DerivedData"
+  - "derivedData"
+  - "Scripts"
+  - "build"
+  - "Worktrees"

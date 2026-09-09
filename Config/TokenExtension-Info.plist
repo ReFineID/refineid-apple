@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!-- The minting half of the CryptoTokenKit pair, and deliberately WITHOUT
+     com.apple.ctk.aid. A driver that declares an AID stops being invoked
+     for the app's own registered slot: nothing is minted and
+     registerSmartCard fails. The AID that ctkd polls contactless cards
+     with is declared by the discovery half instead, which mints nothing -
+     Config/DiscoveryExtension-Info.plist. Two roles, two extensions, two
+     class-ids; do not merge them. -->
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>com.apple.ctk.class-id</key>
+			<string>fi.refineid.ReFineID.token</string>
+			<key>com.apple.ctk.driver-class</key>
+			<string>ReFineIDTokenExtension.TokenDriver</string>
+			<key>com.apple.ctk.token-type</key>
+			<string>smartcard</string>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.ctk-tokens</string>
+	</dict>
+</dict>
+</plist>

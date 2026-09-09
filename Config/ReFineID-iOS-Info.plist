@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>fi</string>
+		<string>sv</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NFCReaderUsageDescription</key>
+	<string>RefineID reads your identity card over NFC for authentication, document signing, activation, and PIN management.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>RefineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>RefineID uses Bluetooth to connect devices securely for remote identity card operations.</string>
+
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_refineid-disc._tcp</string>
+		<string>_refineid-disc._udp</string>
+		<string>_refineid-rly._tcp</string>
+		<string>_refineid-rly._udp</string>
+		<string>_refineid-stream._tcp</string>
+		<string>_refineid-stream._udp</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>RefineID reads the access number printed on your card so you do not have to type it.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>RefineID uses the local network to connect your devices securely for identity-card operations.</string>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>eyeglasses</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Demo Mode</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>fi.refineid.shortcut.demonstration</string>
+		</dict>
+	</array>
+	<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+	<array>
+		<string>A000000063504B43532D3135</string>
+		<string>A0000000181002030000000000000000</string>
+		<string>A000000018434D00</string>
+		<string>A000000151000000</string>
+		<string>A0000002471001</string>
+		<string>A000000308000010000100</string>
+	</array>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>ASiC-E Container</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.etsi.asic-e</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>BDOC Container</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>ee.ria.bdoc</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>org.etsi.asic-e</string>
+			<key>UTTypeDescription</key>
+			<string>ASiC-E Container</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>asice</string>
+					<string>sce</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.etsi.asic-e+zip</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>ee.ria.bdoc</string>
+			<key>UTTypeDescription</key>
+			<string>BDOC Container</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.archive</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>bdoc</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.bdoc-1.0</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

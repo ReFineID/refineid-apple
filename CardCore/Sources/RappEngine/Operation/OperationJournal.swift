@@ -1,0 +1,173 @@
+// Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+
+import Foundation
+
+/// The durable at-most-once coordinator for one operation.
+internal struct OperationJournal {
+  internal private(set) var record: ProxyJournalRecord
+
+  /// A prepared operation with no transmission behind it.
+  internal init(
+    pairIdentifier: Data, sessionIdentifier: Data, operationIdentifier: Data, requestHash: Data
+  ) {
+    self.record = ProxyJournalRecord(
+      pairIdentifier: pairIdentifier,
+      sessionIdentifier: sessionIdentifier,
+      operationIdentifier: operationIdentifier,
+      requestHash: requestHash,
+      state: .prepared,
+      transmissionCount: TransmissionCount.untransmitted,
+      automaticRetryPermitted: false)
+  }
+
+  /// Adopts a record recovered from storage.
+  internal init(recovered record: ProxyJournalRecord) {
+    self.record = record
+  }
+
+  /// Terminal states that need no acknowledgement, unlike a completed result.
+  private static func isUnacknowledgedTerminal(_ state: OperationState) -> Bool {
+    switch state {
+    case .denied, .cancelled, .rejected, .credentialRejected, .ambiguous:
+      true
+
+    default:
+      false
+    }
+  }
+
+  /// Writes the point of no return before any card command is accepted.
+  internal mutating func commit(
+    to store: inout some JournalStore, requestHash: Data
+  ) throws {
+    guard record.state == .prepared else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    guard record.requestHash == requestHash else { throw JournalError.requestHashMismatch }
+    try persist(&store, state: .committed, transmissions: TransmissionCount.untransmitted)
+  }
+
+  /// Records the single transmission and yields the only value a card adapter
+  /// may execute.
+  ///
+  /// The record reaches storage first. If that write fails nothing is handed
+  /// out, so a command can never be transmitted without a durable trace.
+  internal mutating func beginCardCommand<Command>(
+    to store: inout some JournalStore, command: Command
+  ) throws -> PendingCardCommand<Command> {
+    guard record.state == .committed else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    guard record.transmissionCount == TransmissionCount.untransmitted else {
+      throw JournalError.alreadyTransmitted
+    }
+    try persist(&store, state: .executing, transmissions: TransmissionCount.single)
+    return PendingCardCommand(command: command)
+  }
+
+  /// Writes an unsuccessful terminal state after the one card exchange.
+  internal mutating func finish(
+    to store: inout some JournalStore, state: OperationState
+  ) throws {
+    guard record.state == .executing, Self.isUnacknowledgedTerminal(state) else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    try persist(&store, state: state, transmissions: record.transmissionCount)
+  }
+
+  /// Writes an unsuccessful safe-read state, which has no transmission.
+  internal mutating func finishSafeReadFailure(
+    to store: inout some JournalStore, state: OperationState
+  ) throws {
+    guard record.state == .prepared, Self.isUnacknowledgedTerminal(state) else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    try persist(&store, state: state, transmissions: TransmissionCount.untransmitted)
+  }
+
+  /// Records a cancellation proven to precede any transmission.
+  internal mutating func cancelCommittedBeforeTransmission(
+    to store: inout some JournalStore
+  ) throws {
+    guard record.state == .committed, record.transmissionCount == TransmissionCount.untransmitted
+    else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    try persist(&store, state: .cancelled, transmissions: TransmissionCount.untransmitted)
+  }
+
+  /// Retains a successful consequential result before it may be sent.
+  internal mutating func finishCompleted(
+    to store: inout some JournalStore, result: OperationResultMessage
+  ) throws {
+    try persistCompleted(&store, result: result, from: .executing)
+  }
+
+  /// Retains a successful safe-read result, which skips prepare and commit.
+  internal mutating func finishSafeReadCompleted(
+    to store: inout some JournalStore, result: OperationResultMessage
+  ) throws {
+    try persistCompleted(&store, result: result, from: .prepared)
+  }
+
+  /// Records acknowledgement and releases the retained result.
+  internal mutating func acknowledgeResult(to store: inout some JournalStore) throws {
+    guard record.state == .resultPending else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    var next = record
+    next.state = .completed
+    next.automaticRetryPermitted = false
+    try store.acknowledgeResult(next)
+    record = next
+  }
+
+  /// Keeps the result but forbids redelivery or a further card attempt.
+  internal mutating func markDeliveryUncertain(to store: inout some JournalStore) throws {
+    guard record.state == .resultPending else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    var next = record
+    next.state = .deliveryUncertain
+    next.automaticRetryPermitted = false
+    try store.retainUncertainResult(next)
+    record = next
+  }
+
+  /// Resolves a record interrupted mid-flight.
+  ///
+  /// A committed or executing record cannot be proven either way, so it
+  /// becomes ambiguous. It is never retried: the card may already have acted.
+  internal mutating func recoverAfterCrash(to store: inout some JournalStore) throws {
+    guard record.state == .committed || record.state == .executing else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    try persist(&store, state: .ambiguous, transmissions: record.transmissionCount)
+  }
+
+  private mutating func persist(
+    _ store: inout some JournalStore, state: OperationState, transmissions: UInt8
+  ) throws {
+    var next = record
+    next.state = state
+    next.transmissionCount = transmissions
+    next.automaticRetryPermitted = false
+    try store.persist(next)
+    record = next
+  }
+
+  private mutating func persistCompleted(
+    _ store: inout some JournalStore,
+    result: OperationResultMessage,
+    from expected: OperationState
+  ) throws {
+    guard record.state == expected else {
+      throw JournalError.invalidState(state: record.state)
+    }
+    var next = record
+    next.state = .resultPending
+    next.automaticRetryPermitted = false
+    try store.persistResult(next, result: result)
+    record = next
+  }
+}
