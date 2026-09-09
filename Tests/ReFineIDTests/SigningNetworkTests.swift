@@ -152,9 +152,11 @@ internal struct SigningNetworkTests {
     #expect(request.url?.absoluteString == "https://timestamp.example/path")
     #expect(request.httpMethod == "POST")
     #expect(request.httpBody == body)
+    let expectedAuthorization =
+      "Basic " + Data("account:secret".utf8).base64EncodedString()
     #expect(
       request.value(forHTTPHeaderField: "Authorization")
-        == "Basic YWNjb3VudDpzZWNyZXQ="
+        == expectedAuthorization
     )
   }
 
