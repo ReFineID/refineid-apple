@@ -17,7 +17,7 @@ internal final class GrammarParserDelegate: NSObject, XMLParserDelegate {
     didStartElement elementName: String,
     namespaceURI _: String?,
     qualifiedName _: String?,
-    attributes attributeDict: [String: String] = [:]
+    attributes attributeDict: [String: String]
   ) {
     switch elementName {
     case "scxml":

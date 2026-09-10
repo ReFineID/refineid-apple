@@ -157,7 +157,9 @@
       let vault = RappDeviceVault()
       guard
         let match = ((try? vault.activePairIDs()) ?? []).first(where: { pairID in
-          pairID.prefix(Self.identifierPrefixLength).map { String(format: "%02x", $0) }.joined()
+          pairID.prefix(Self.identifierPrefixLength)
+            .map { String(format: "%02x", $0) }
+            .joined()
             .hasPrefix(prefix)
         })
       else {

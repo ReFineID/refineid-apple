@@ -44,8 +44,8 @@ public enum CardExchangeTrace {
     let instruction = Self.instruction(of: request)
     let named =
       "apdu ins="
-      + (instruction.map {
-        String(format: Self.byteFormat, $0)
+      + (instruction.map { byte in
+        String(format: Self.byteFormat, byte)
       } ?? Self.unknown)
     #if DEBUG
       let rawResponse = response.map(Self.hex) ?? Self.unknown

@@ -31,7 +31,7 @@
     @MainActor
     internal static func perform(_ item: UIApplicationShortcutItem?) -> Bool {
       guard item?.type == Self.itemType else { return false }
-      DemoMode.shared.activate()
+      DemoMode.shared.activate(scenario: DemoMode.defaultScenario)
       return true
     }
   }

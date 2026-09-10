@@ -108,10 +108,7 @@
     // MARK: Static Functions
 
     /// Whether the signed-in page is on screen matching any given marker.
-    private static func signedIn(
-      _ safari: XCUIApplication,
-      matching markers: [String]
-    ) -> Bool {
+    private static func signedIn(_ safari: XCUIApplication, matching markers: [String]) -> Bool {
       let webView = safari.webViews.firstMatch
       for marker in markers {
         let predicate = NSPredicate(format: "label CONTAINS[cd] %@", marker)
@@ -206,6 +203,13 @@
       try XCTSkipUnless(
         UITestEnvironment.realCardTestsEnabled,
         "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
+    }
+
+    override internal func tearDownWithError() throws {
+      MainActor.assumeIsolated {
+        XCUIApplication().terminate()
+      }
+      try super.tearDownWithError()
     }
 
     // MARK: Functions

@@ -63,8 +63,8 @@ internal enum AsicSigner {
   internal static func sign(
     _ objects: [AsicContainer.DataObject],
     pin2: String?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
+    transport: CardMaintenance.Transport,
+    cardAccessNumber: String?
   ) async throws -> Data {
     // Asked before the card is touched. A set that cannot be carried
     // is refused while a refusal is still free; discovering it after

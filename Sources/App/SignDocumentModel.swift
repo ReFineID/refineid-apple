@@ -331,9 +331,13 @@
       )
       let result = try await DocumentSigner.sign(
         document,
-        pin2: pin2,
         claim: pdfClaim,
-        stamp: visibleStamp
+        stamp: visibleStamp,
+        access: DocumentSigner.SigningAccess(
+          pin2: pin2,
+          transport: .reader,
+          cardAccessNumber: nil
+        )
       )
       try result.bytes.write(to: destination, options: .atomic)
       #if DEBUG

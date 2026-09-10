@@ -43,40 +43,44 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
 
   // MARK: Content Properties
 
-  internal var body: some View {
-    HStack {
-      Group {
-        if revealsValue {
-          TextField(name, text: $text)
-            .textContentType(.oneTimeCode)
-            #if os(iOS)
-              .keyboardType(.numberPad)
-            #endif
-            .autocorrectionDisabled()
-            .lineLimit(lineLimit)
-            .onValueChange(of: text) { value in
-              text = LimitedDigits.puk(value)
-            }
-        } else {
-          field()
+  private var inputGroup: some View {
+    Group {
+      if revealsValue {
+        TextField(name, text: $text)
+          .textContentType(.oneTimeCode)
+          #if os(iOS)
+            .keyboardType(.numberPad)
+          #endif
+          .autocorrectionDisabled()
+          .lineLimit(lineLimit)
+          .onValueChange(of: text) { value in
+            text = LimitedDigits.puk(value)
+          }
+      } else {
+        field()
+      }
+    }
+    // A Form on macOS turns the field's title into a leading label
+    // and shrinks the editable area to a small trailing box. The
+    // plain, label-free field spans the whole line instead, with
+    // the name shown inside it the way iOS shows it.
+    #if os(macOS)
+      .textFieldStyle(.plain)
+      .labelsHidden()
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .overlay(alignment: .leading) {
+        if text.isEmpty {
+          Text(name)
+          .foregroundStyle(.secondary)
+          .allowsHitTesting(false)
         }
       }
-      // A Form on macOS turns the field's title into a leading label
-      // and shrinks the editable area to a small trailing box. The
-      // plain, label-free field spans the whole line instead, with
-      // the name shown inside it the way iOS shows it.
-      #if os(macOS)
-        .textFieldStyle(.plain)
-        .labelsHidden()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .leading) {
-          if text.isEmpty {
-            Text(name)
-            .foregroundStyle(.secondary)
-            .allowsHitTesting(false)
-          }
-        }
-      #endif
+    #endif
+  }
+
+  internal var body: some View {
+    HStack {
+      inputGroup
       Button {
         revealsValue.toggle()
       } label: {

@@ -10,7 +10,7 @@
       #if FEATURE_PDF_STAMP
         case pdfStamp
       #endif
-      case pin
+      case pinCodes
       case remote
       case timeStamp
     }
@@ -34,7 +34,7 @@
       }
       .frame(minWidth: Self.paneWidth, minHeight: Self.paneHeight)
       .onChange(of: readerCardIsPresent) { _, present in
-        if !present, pane == .pin {
+        if !present, pane == .pinCodes {
           pane = .remote
         }
       }
@@ -52,11 +52,20 @@
 
     @ViewBuilder private var mainSettingsTabs: some View {
       if readerCardIsPresent {
-        CardManagementView()
-          .tabItem {
-            Label(String(localized: "PIN"), systemImage: "key")
+        CardManagementView(
+          readerCardIsPresent: false,
+          activationRequired: false,
+          cardAccessNumber: nil,
+          activationScheme: nil,
+          activationNeeds: nil,
+          onActivationSucceeded: {
+            // optional hook; default is a no-op
           }
-          .tag(Pane.pin)
+        )
+        .tabItem {
+          Label(String(localized: "PIN Codes"), systemImage: "key")
+        }
+        .tag(Pane.pinCodes)
       }
       RemotePairingSettingsView()
         .tabItem {

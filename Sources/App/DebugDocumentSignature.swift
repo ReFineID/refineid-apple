@@ -84,7 +84,14 @@
         let started = ContinuousClock.now
         do {
           let product = try await DocumentSigner.sign(
-            document, pin2: pin2, reason: nil, location: nil
+            document,
+            reason: nil,
+            location: nil,
+            access: DocumentSigner.SigningAccess(
+              pin2: pin2,
+              transport: .reader,
+              cardAccessNumber: nil
+            )
           )
           let destination = SignDocumentModel.destination(
             for: source, at: Date(), format: .pades

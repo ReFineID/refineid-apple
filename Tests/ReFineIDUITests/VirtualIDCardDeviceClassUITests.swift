@@ -21,6 +21,14 @@
       continueAfterFailure = false
     }
 
+    override internal func tearDown() {
+      MainActor.assumeIsolated {
+        XCUIApplication().terminate()
+      }
+      continueAfterFailure = true
+      super.tearDown()
+    }
+
     internal func testTransportControlsFollowDeviceClass() {
       let app = UITestApp.launchVirtualCard()
       openEditor(in: app)
@@ -93,23 +101,6 @@
       readerFault.tap()
     }
 
-    private func openEditor(in app: XCUIApplication) {
-      let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
-      XCTAssertTrue(
-        overlay.waitForExistence(timeout: Self.appearTimeout),
-        "floating Virtual ID Card is missing")
-      overlay.tap()
-      XCTAssertTrue(
-        app.descendants(matching: .any)[UITestIdentifiers.virtualCardEditor]
-          .waitForExistence(timeout: Self.appearTimeout),
-        "Virtual ID Card editor did not open")
-    }
-
-    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
-      for _ in 0..<6 where !(element.exists && element.isHittable) {
-        app.swipeUp()
-      }
-    }
   }
 
 #endif

@@ -234,6 +234,7 @@ extension CardCredentialsView {
         #endif
         if let activationScheme, let activationNeeds {
           CardManagementView(
+            readerCardIsPresent: false,
             activationRequired: true,
             cardAccessNumber: cardAccessNumberEntry,
             activationScheme: activationScheme,
@@ -248,11 +249,27 @@ extension CardCredentialsView {
           let _: Void = DebugConsole.emit("navigation-destination: PIN management")
         #endif
         if hasReaderIdentity {
-          CardManagementView(readerCardIsPresent: true)
-            .id(CardSetupStateMachine.Destination.pinManagement)
+          CardManagementView(
+            readerCardIsPresent: true,
+            activationRequired: false,
+            cardAccessNumber: nil,
+            activationScheme: nil,
+            activationNeeds: nil,
+            onActivationSucceeded: {
+              // optional hook; default is a no-op
+            }
+          )
+          .id(CardSetupStateMachine.Destination.pinManagement)
         } else {
           CardManagementView(
-            cardAccessNumber: managementCardAccessNumber
+            readerCardIsPresent: false,
+            activationRequired: false,
+            cardAccessNumber: managementCardAccessNumber,
+            activationScheme: nil,
+            activationNeeds: nil,
+            onActivationSucceeded: {
+              // optional hook; default is a no-op
+            }
           )
           .id(CardSetupStateMachine.Destination.pinManagement)
         }

@@ -124,7 +124,7 @@ internal final class CredentialRetryHealth: ObservableObject {
     report = nil
     let generation = refreshGeneration
     readerRefresh = Task { [weak self] in
-      let report = await CardMaintenance.credentialReport(
+      let freshReport = await CardMaintenance.credentialReport(
         transport: .reader,
         cardAccessNumber: nil
       )
@@ -134,7 +134,7 @@ internal final class CredentialRetryHealth: ObservableObject {
         refreshGeneration == generation
       else { return }
       readerRefresh = nil
-      apply(report)
+      apply(freshReport)
     }
   }
 

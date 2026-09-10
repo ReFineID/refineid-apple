@@ -187,7 +187,7 @@
     }
 
     internal func activate(
-      scenario: VirtualIDCard.Scenario = DemoMode.defaultScenario
+      scenario: VirtualIDCard.Scenario
     ) {
       isActive = true
       state = scenario.snapshot

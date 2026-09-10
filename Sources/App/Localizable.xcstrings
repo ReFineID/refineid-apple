@@ -2917,22 +2917,6 @@
         }
       }
     },
-    "PIN": {
-      "localizations": {
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PIN"
-          }
-        }
-      }
-    },
     "PIN 1": {
       "localizations": {
         "fi": {
@@ -6165,6 +6149,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "verifierad under den här sessionen"
+          }
+        }
+      }
+    },
+    "PIN Codes": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tunnusluvut"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PIN-koder"
           }
         }
       }

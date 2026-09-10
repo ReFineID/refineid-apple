@@ -318,9 +318,18 @@ internal struct CardCredentialsView: View {
   internal var body: some View {
     #if os(iOS)
       if readerActivationRequired {
-        CardManagementView(readerCardIsPresent: true, activationRequired: true)
-          .navigationTitle("RefineID")
-          .navigationBarTitleDisplayMode(.large)
+        CardManagementView(
+          readerCardIsPresent: true,
+          activationRequired: true,
+          cardAccessNumber: nil,
+          activationScheme: nil,
+          activationNeeds: nil,
+          onActivationSucceeded: {
+            // optional hook; default is a no-op
+          }
+        )
+        .navigationTitle("RefineID")
+        .navigationBarTitleDisplayMode(.large)
       } else {
         credentialsForm
       }

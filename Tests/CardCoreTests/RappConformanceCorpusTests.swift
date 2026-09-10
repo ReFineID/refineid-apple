@@ -115,8 +115,8 @@ internal struct RappConformanceCorpusTests {
   @Test("Swift independently normalizes and commits granted profiles")
   internal func grantsHash() throws {
     for vector in try Self.corpus().grantsHash {
-      let profiles = vector.profiles.sorted {
-        Data($0.utf8).lexicographicallyPrecedes(Data($1.utf8))
+      let profiles = vector.profiles.sorted { left, right in
+        Data(left.utf8).lexicographicallyPrecedes(Data(right.utf8))
       }
       let preimage = try RappConformanceCorpusSupport.DeterministicCBOR.encode(
         .array(profiles.map(RappConformanceCorpusSupport.CorpusValue.text))

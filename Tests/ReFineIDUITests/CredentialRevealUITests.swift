@@ -15,6 +15,14 @@
       continueAfterFailure = false
     }
 
+    override internal func tearDown() {
+      MainActor.assumeIsolated {
+        XCUIApplication().terminate()
+      }
+      continueAfterFailure = true
+      super.tearDown()
+    }
+
     internal func testRevealSwapsToStandardFieldAndBack() {
       let app = UITestApp.launchVirtualCard(scenario: "activated-reader")
       let key = app.buttons[UITestIdentifiers.pinManagementButton]

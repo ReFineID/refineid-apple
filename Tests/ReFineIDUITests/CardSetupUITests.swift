@@ -33,6 +33,13 @@ internal final class CardSetupUITests: XCTestCase {
       "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
   }
 
+  override internal func tearDownWithError() throws {
+    MainActor.assumeIsolated {
+      XCUIApplication().terminate()
+    }
+    try super.tearDownWithError()
+  }
+
   // MARK: Functions
 
   /// Enters both credentials and asserts that identity creation is ready.

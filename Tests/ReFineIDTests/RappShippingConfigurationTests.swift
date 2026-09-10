@@ -8,6 +8,10 @@ import Testing
 internal struct RappShippingConfigurationTests {
   // MARK: Static Properties
 
+  private enum ConfigurationError: Error {
+    case missingExtensionAttributes
+  }
+
   private static let classID = "fi.refineid.ReFineID.rapp-token"
   private static let service = "_refineid-rly._tcp"
 
@@ -31,9 +35,14 @@ internal struct RappShippingConfigurationTests {
 
   private static func extensionAttributes(
     _ plist: [String: Any]
-  ) -> [String: Any]? {
-    (plist["NSExtension"] as? [String: Any])?["NSExtensionAttributes"]
-      as? [String: Any]
+  ) throws -> [String: Any] {
+    guard
+      let attributes = (plist["NSExtension"] as? [String: Any])?["NSExtensionAttributes"]
+        as? [String: Any]
+    else {
+      throw ConfigurationError.missingExtensionAttributes
+    }
+    return attributes
   }
 
   // MARK: Functions
@@ -44,8 +53,8 @@ internal struct RappShippingConfigurationTests {
 
     let reader = try Self.plist("Config/TokenExtension-Info.plist")
     let rapp = try Self.plist("Config/RappTokenExtension-Info.plist")
-    let readerAttributes = try #require(Self.extensionAttributes(reader))
-    let rappAttributes = try #require(Self.extensionAttributes(rapp))
+    let readerAttributes = try Self.extensionAttributes(reader)
+    let rappAttributes = try Self.extensionAttributes(rapp)
     #expect(readerAttributes["com.apple.ctk.class-id"] as? String == "fi.refineid.ReFineID.token")
     #expect(
       readerAttributes["com.apple.ctk.driver-class"] as? String

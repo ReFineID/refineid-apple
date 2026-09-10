@@ -5,9 +5,27 @@ import SwiftUI
 extension CardCredentialsView {
   private var managementDestination: some View {
     #if os(iOS)
-      CardManagementView(cardAccessNumber: managementCardAccessNumber)
+      CardManagementView(
+        readerCardIsPresent: false,
+        activationRequired: false,
+        cardAccessNumber: managementCardAccessNumber,
+        activationScheme: nil,
+        activationNeeds: nil,
+        onActivationSucceeded: {
+          // optional hook; default is a no-op
+        }
+      )
     #else
-      CardManagementView()
+      CardManagementView(
+        readerCardIsPresent: false,
+        activationRequired: false,
+        cardAccessNumber: nil,
+        activationScheme: nil,
+        activationNeeds: nil,
+        onActivationSucceeded: {
+          // optional hook; default is a no-op
+        }
+      )
     #endif
   }
 

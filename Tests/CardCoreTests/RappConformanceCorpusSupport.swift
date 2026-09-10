@@ -4,47 +4,48 @@ import CryptoKit
 import Foundation
 
 internal enum RappConformanceCorpusSupport {
-  private enum Constants {
-    private enum CBORMajor: UInt8 {
-      case array = 4
-      case bytes = 2
-      case map = 5
-      case negative = 1
-      case text = 3
-      case unsigned = 0
-    }
 
-    static let majorUnsigned = CBORMajor.unsigned.rawValue
-    static let majorNegative = CBORMajor.negative.rawValue
-    static let majorBytes = CBORMajor.bytes.rawValue
-    static let majorText = CBORMajor.text.rawValue
-    static let majorArray = CBORMajor.array.rawValue
-    static let majorMap = CBORMajor.map.rawValue
-    static let compactValueLimit: UInt64 = 23
-    static let utf8HexDigitsPerByte = 2
-    static let prefixLength = 8
-    static let hexRadix = 16
-    static let hexPairLength = 2
-    static let cborLength8Bit = 24
-    static let cborLength16Bit = 25
-    static let cborLength32Bit = 26
-    static let cborLength64Bit = 27
-    static let boolFalse = Self.byte(fromHex: "f4")
-    static let boolTrue = Self.byte(fromHex: "f5")
-    static let cborNull = Self.byte(fromHex: "f6")
-    static let cborLength8BitMax = UInt64(UInt8.max)
-    static let cborLength16BitMax = UInt64(UInt16.max)
-    static let cborLength32BitMax = UInt64(UInt32.max)
-    static let nibbleShift: UInt8 = 4
-    static let zeroDigit: UInt8 = 48
-    static let nineDigit: UInt8 = 57
-    static let upperADigit: UInt8 = 65
-    static let upperFDigit: UInt8 = 70
-    static let lowerADigit: UInt8 = 97
-    static let lowerFDigit: UInt8 = 102
-    static let upperOffset: UInt8 = 55
-    static let lowerOffset: UInt8 = 87
-    static let hexPrefix = 4
+  private enum CBORMajor: UInt8 {
+    case array = 4
+    case bytes = 2
+    case map = 5
+    case negative = 1
+    case text = 3
+    case unsigned = 0
+  }
+
+  internal enum Constants {
+    internal static let majorUnsigned = CBORMajor.unsigned.rawValue
+    internal static let majorNegative = CBORMajor.negative.rawValue
+    internal static let majorBytes = CBORMajor.bytes.rawValue
+    internal static let majorText = CBORMajor.text.rawValue
+    internal static let majorArray = CBORMajor.array.rawValue
+    internal static let majorMap = CBORMajor.map.rawValue
+    internal static let compactValueLimit: UInt64 = 23
+    internal static let utf8HexDigitsPerByte = 2
+    internal static let prefixLength = 8
+    internal static let hexRadix = 16
+    internal static let hexPairLength = 2
+    internal static let cborLength8Bit = 24
+    internal static let cborLength16Bit = 25
+    internal static let cborLength32Bit = 26
+    internal static let cborLength64Bit = 27
+    internal static let boolFalse = Self.byte(fromHex: "f4")
+    internal static let boolTrue = Self.byte(fromHex: "f5")
+    internal static let cborNull = Self.byte(fromHex: "f6")
+    internal static let cborLength8BitMax = UInt64(UInt8.max)
+    internal static let cborLength16BitMax = UInt64(UInt16.max)
+    internal static let cborLength32BitMax = UInt64(UInt32.max)
+    internal static let nibbleShift: UInt8 = 4
+    internal static let zeroDigit: UInt8 = 48
+    internal static let nineDigit: UInt8 = 57
+    internal static let upperADigit: UInt8 = 65
+    internal static let upperFDigit: UInt8 = 70
+    internal static let lowerADigit: UInt8 = 97
+    internal static let lowerFDigit: UInt8 = 102
+    internal static let upperOffset: UInt8 = 55
+    internal static let lowerOffset: UInt8 = 87
+    internal static let hexPrefix = 4
 
     private static func byte(fromHex value: String) -> UInt8 {
       guard let byte = UInt8(value, radix: Self.hexRadix) else {
@@ -200,6 +201,16 @@ internal enum RappConformanceCorpusSupport {
     internal let error: String
   }
 
+  // MARK: Nested Types
+
+  private enum CorpusValueKeys: String, CodingKey {
+    case entries = "entries"
+    case hex = "hex"
+    case items = "items"
+    case kind = "kind"
+    case value = "value"
+  }
+
   internal indirect enum CorpusValue: Decodable {
     case array([Self])
     case bool(Bool)
@@ -210,20 +221,10 @@ internal enum RappConformanceCorpusSupport {
     case text(String)
     case unsigned(UInt64)
 
-    // MARK: Nested Types
-
-    private enum CodingKeys: String, CodingKey {
-      case entries = "entries"
-      case hex = "hex"
-      case items = "items"
-      case kind = "kind"
-      case value = "value"
-    }
-
     // MARK: Lifecycle
 
     internal init(from decoder: Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
+      let container = try decoder.container(keyedBy: CorpusValueKeys.self)
       switch try container.decode(String.self, forKey: .kind) {
       case "unsigned":
         self = try .unsigned(container.decode(UInt64.self, forKey: .value))
@@ -266,78 +267,6 @@ internal enum RappConformanceCorpusSupport {
   internal struct CorpusMapEntry: Decodable {
     internal let key: String
     internal let value: CorpusValue
-  }
-
-  internal enum DeterministicCBOR {
-    internal static func encode(_ value: CorpusValue) throws -> Data {
-      switch value {
-      case .unsigned(let number):
-        return header(major: Constants.majorUnsigned, value: number)
-
-      case .negative(let number):
-        guard number < 0 else { throw CorpusError.invalidNegative }
-        return header(major: Constants.majorNegative, value: UInt64(-(number + 1)))
-
-      case .bytes(let bytes):
-        return header(major: Constants.majorBytes, value: UInt64(bytes.count)) + bytes
-
-      case .text(let text):
-        let bytes = Data(text.utf8)
-        return header(major: Constants.majorText, value: UInt64(bytes.count)) + bytes
-
-      case .array(let items):
-        return try items.reduce(header(major: Constants.majorArray, value: UInt64(items.count))) {
-          try $0 + encode($1)
-        }
-
-      case .map(let entries):
-        var seen = Set<Data>()
-        let encodedEntries = try entries.map { entry -> (Data, Data) in
-          let key = try encode(.text(entry.key))
-          guard seen.insert(key).inserted else { throw CorpusError.duplicateMapKey }
-          return try (key, encode(entry.value))
-        }.sorted { left, right in
-          left.0.lexicographicallyPrecedes(right.0)
-        }
-        return encodedEntries.reduce(
-          header(major: Constants.majorMap, value: UInt64(entries.count))
-        ) {
-          $0 + $1.0 + $1.1
-        }
-
-      case .bool(let value):
-        return Data([value ? Constants.boolTrue : Constants.boolFalse])
-
-      case .null:
-        return Data([Constants.cborNull])
-      }
-    }
-
-    private static func header(major: UInt8, value: UInt64) -> Data {
-      let prefix = major << 5
-      switch value {
-      case 0...Constants.compactValueLimit:
-        return Data([prefix | UInt8(value)])
-
-      case UInt64(Constants.cborLength8Bit)...Constants.cborLength8BitMax:
-        return Data([prefix | UInt8(Constants.cborLength8Bit), UInt8(value)])
-
-      case 0...Constants.cborLength16BitMax:
-        var integer = UInt16(value).bigEndian
-        return Data([prefix | UInt8(Constants.cborLength16Bit)])
-          + withUnsafeBytes(of: &integer) { Data($0) }
-
-      case 0...Constants.cborLength32BitMax:
-        var integer = UInt32(value).bigEndian
-        return Data([prefix | UInt8(Constants.cborLength32Bit)])
-          + withUnsafeBytes(of: &integer) { Data($0) }
-
-      default:
-        var integer = value.bigEndian
-        return Data([prefix | UInt8(Constants.cborLength64Bit)])
-          + withUnsafeBytes(of: &integer) { Data($0) }
-      }
-    }
   }
 
   internal enum CorpusError: Error {

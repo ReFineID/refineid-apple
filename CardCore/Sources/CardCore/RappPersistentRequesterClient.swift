@@ -80,6 +80,17 @@
       self.vault = vault
     }
 
+    // MARK: Static Functions
+
+    /// The most recently made pairing, which is the one to use when the
+    /// holder has not chosen among several.
+    private static func newestPairID(in vault: RappDeviceVault) async throws -> Data? {
+      try await RappPairCatalog(vault: vault)
+        .activePairs()
+        .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
+        .pairID
+    }
+
     // MARK: Functions
 
     /// Runs one operation and blocks the caller until it resolves.
@@ -139,15 +150,6 @@
     }
 
     // MARK: Lifecycle
-
-    /// The most recently made pairing, which is the one to use when the
-    /// holder has not chosen among several.
-    private static func newestPairID(in vault: RappDeviceVault) async throws -> Data? {
-      try await RappPairCatalog(vault: vault)
-        .activePairs()
-        .max { $0.createdAtMilliseconds < $1.createdAtMilliseconds }?
-        .pairID
-    }
 
     internal func receive(_ event: PersistentRelayEvent) {
       switch event {
@@ -244,5 +246,6 @@
       }
       if shouldSignal { completed.signal() }
     }
+
   }
 #endif
