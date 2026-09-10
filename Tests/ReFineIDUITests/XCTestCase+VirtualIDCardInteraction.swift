@@ -6,6 +6,15 @@
 
   /// Low-level virtual card GUI interaction: menus, editors and typing.
   extension XCTestCase {
+    internal enum AccessibilityFrameCapture {
+      internal static let originXGroupIndex = 1
+      internal static let originYGroupIndex = 2
+      internal static let widthGroupIndex = 3
+      internal static let heightGroupIndex = 4
+      internal static let centerDivisor: CGFloat = 2
+      internal static let maximumScrollAttempts = 8
+    }
+
     @MainActor
     internal func openEditor(in app: XCUIApplication) {
       let overlay = app.buttons[UITestIdentifiers.virtualCardOverlay]
@@ -48,9 +57,40 @@
     internal func selectMenu(
       identifier: String,
       option: String,
+      in app: XCUIApplication
+    ) {
+      selectMenu(
+        identifier: identifier,
+        option: option,
+        in: app,
+        optionIdentifier: nil,
+        scrolling: false
+      )
+    }
+
+    @MainActor
+    internal func selectMenu(
+      identifier: String,
+      option: String,
       in app: XCUIApplication,
-      optionIdentifier: String? = nil,
-      scrolling: Bool = false
+      optionIdentifier: String?
+    ) {
+      selectMenu(
+        identifier: identifier,
+        option: option,
+        in: app,
+        optionIdentifier: optionIdentifier,
+        scrolling: false
+      )
+    }
+
+    @MainActor
+    internal func selectMenu(
+      identifier: String,
+      option: String,
+      in app: XCUIApplication,
+      optionIdentifier: String?,
+      scrolling: Bool
     ) {
       // A menu surfaces as its own control and again as its label; either opens it.
       let menu = app.descendants(matching: .any)[identifier].firstMatch
@@ -209,19 +249,22 @@
       }
 
       guard
-        let originX = value(at: 1),
-        let originY = value(at: 2),
-        let width = value(at: 3),
-        let height = value(at: 4)
+        let originX = value(at: AccessibilityFrameCapture.originXGroupIndex),
+        let originY = value(at: AccessibilityFrameCapture.originYGroupIndex),
+        let width = value(at: AccessibilityFrameCapture.widthGroupIndex),
+        let height = value(at: AccessibilityFrameCapture.heightGroupIndex)
       else {
         return nil
       }
-      return CGVector(dx: originX + width / 2, dy: originY + height / 2)
+      return CGVector(
+        dx: originX + width / AccessibilityFrameCapture.centerDivisor,
+        dy: originY + height / AccessibilityFrameCapture.centerDivisor
+      )
     }
 
     @MainActor
     internal func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
-      for _ in 0..<8 where !element.isHittable {
+      for _ in 0..<AccessibilityFrameCapture.maximumScrollAttempts where !element.isHittable {
         app.swipeUp()
       }
     }

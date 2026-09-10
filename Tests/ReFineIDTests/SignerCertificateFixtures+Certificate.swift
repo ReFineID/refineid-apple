@@ -8,65 +8,6 @@ import Security
 
 /// The X.509 certificate factory for the generated signers.
 extension SignerCertificateFixtures {
-  /// ASN.1 BIT STRING.
-  private static let bitStringTag: UInt8 = 0x03
-
-  /// ASN.1 BOOLEAN.
-  private static let booleanTag: UInt8 = 0x01
-
-  /// ASN.1 OCTET STRING.
-  private static let octetStringTag: UInt8 = 0x04
-
-  /// ASN.1 GeneralizedTime.
-  private static let generalizedTimeTag: UInt8 = 0x18
-
-  /// ASN.1 NULL.
-  private static let nullTag: UInt8 = 0x05
-
-  /// ASN.1 UTF8String.
-  private static let utf8StringTag: UInt8 = 0x0C
-
-  /// Explicit context tag for the X.509 version.
-  private static let versionTag: UInt8 = 0xA0
-
-  /// Explicit context tag for X.509 extensions.
-  private static let extensionsTag: UInt8 = 0xA3
-
-  /// DER BOOLEAN TRUE.
-  private static let booleanTrue: UInt8 = 0xFF
-
-  /// id-at-commonName.
-  private static let commonNameOid = "2.5.4.3"
-
-  /// id-ce-basicConstraints.
-  private static let basicConstraintsOid = "2.5.29.19"
-
-  /// id-ce-keyUsage.
-  private static let keyUsageOid = "2.5.29.15"
-
-  /// ecdsa-with-SHA512.
-  private static let ecdsaSha512Oid = "1.2.840.10045.4.3.4"
-
-  /// ecdsa-with-SHA256.
-  private static let ecdsaSha256Oid = "1.2.840.10045.4.3.2"
-
-  /// sha256WithRSAEncryption.
-  private static let rsaSha256Oid = "1.2.840.113549.1.1.11"
-
-  /// P-256 key size.
-  private static let ecdsaP256KeySize = 256
-
-  /// P-521 key size.
-  private static let ecdsaP521KeySize = 521
-
-  /// RSA fixture key size.
-  private static let rsaKeySize = 2_048
-
-  /// X.509 version 3's zero-based value.
-  private static let versionThree = 2
-
-  /// KeyUsage's keyEncipherment bit position from the high end.
-  private static let keyEnciphermentBitOffset = 3
 
   /// Empty BasicConstraints denotes an explicit end entity.
   private static var endEntityExtension: Data {

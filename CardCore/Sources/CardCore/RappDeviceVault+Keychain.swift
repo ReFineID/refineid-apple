@@ -191,7 +191,14 @@ extension RappDeviceVault {
     attributes: [String: Any]
   ) throws {
     if inMemoryStore[service]?[account] != nil || TestCredentialEnvironment.isTestMode {
-      inMemoryStore[service, default: [:]][account] = attributes
+      // Mirror SecItemUpdate merge semantics: fold the attributes into the
+      // stored item and keep its account, so later reads see one whole item.
+      var stored = inMemoryStore[service]?[account] ?? [:]
+      stored[kSecAttrAccount as String] = account
+      for (key, value) in attributes {
+        stored[key] = value
+      }
+      inMemoryStore[service, default: [:]][account] = stored
       if TestCredentialEnvironment.isTestMode { return }
     }
     let status = SecItemUpdate(

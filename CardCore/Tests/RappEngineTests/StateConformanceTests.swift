@@ -35,50 +35,45 @@ internal struct StateConformanceTests {
     return entries
   }
 
+  private func entries<State, Event>(
+    machine: String,
+    rules: [RappRule<State, Event>],
+    transition: (State, Event, EndpointRole) -> RappTransition<State>?
+  ) -> Set<ModelEntry>
+  where
+    State: RawRepresentable, State.RawValue == String,
+    Event: RawRepresentable, Event.RawValue == String
+  {
+    var collected: Set<ModelEntry> = []
+    for rule in rules {
+      for from in rule.from {
+        for role in roles(of: rule.role.rawValue) {
+          guard let fired = transition(from, rule.event, role) else { continue }
+          collected.insert(
+            ModelEntry(
+              machine: machine, from: from.rawValue, event: rule.event.rawValue,
+              role: role.rawValue, destination: fired.state.rawValue,
+              actions: fired.actions.map(\.rawValue).joined(separator: ",")))
+        }
+      }
+    }
+    return collected
+  }
+
   /// Entries the Swift tables define, resolved through the same lookup the
   /// engine uses so the tables cannot pass by being read a second way.
   private func swiftEntries() -> Set<ModelEntry> {
-    var entries: Set<ModelEntry> = []
-    for rule in RappModelTables.pairing {
-      for from in rule.from {
-        for role in roles(of: rule.role.rawValue) {
-          guard let fired = PairingState.transition(from: from, on: rule.event, role: role)
-          else { continue }
-          entries.insert(
-            ModelEntry(
-              machine: "pairing", from: from.rawValue, event: rule.event.rawValue,
-              role: role.rawValue, destination: fired.state.rawValue,
-              actions: fired.actions.map(\.rawValue).joined(separator: ",")))
-        }
-      }
-    }
-    for rule in RappModelTables.session {
-      for from in rule.from {
-        for role in roles(of: rule.role.rawValue) {
-          guard let fired = SessionState.transition(from: from, on: rule.event, role: role)
-          else { continue }
-          entries.insert(
-            ModelEntry(
-              machine: "session", from: from.rawValue, event: rule.event.rawValue,
-              role: role.rawValue, destination: fired.state.rawValue,
-              actions: fired.actions.map(\.rawValue).joined(separator: ",")))
-        }
-      }
-    }
-    for rule in RappModelTables.operation {
-      for from in rule.from {
-        for role in roles(of: rule.role.rawValue) {
-          guard let fired = OperationState.transition(from: from, on: rule.event, role: role)
-          else { continue }
-          entries.insert(
-            ModelEntry(
-              machine: "operation", from: from.rawValue, event: rule.event.rawValue,
-              role: role.rawValue, destination: fired.state.rawValue,
-              actions: fired.actions.map(\.rawValue).joined(separator: ",")))
-        }
-      }
-    }
-    return entries
+    entries(machine: "pairing", rules: RappModelTables.pairing, transition: PairingState.transition)
+      .union(
+        entries(
+          machine: "session", rules: RappModelTables.session,
+          transition: SessionState.transition)
+      )
+      .union(
+        entries(
+          machine: "operation", rules: RappModelTables.operation,
+          transition: OperationState.transition)
+      )
   }
 
   @Test("The transcription names the revision it was made from")

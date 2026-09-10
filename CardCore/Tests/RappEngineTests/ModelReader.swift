@@ -16,32 +16,39 @@ private let ruleMarkerLength = 2
 
 /// A deliberately small reader for the block-style subset the model uses.
 internal struct ModelReader {
-  internal let documentVersion: String
-  internal let guardNames: Set<String>
-  internal let actionNames: Set<String>
-  internal let rules: [String: [ParsedRule]]
+  // MARK: Nested Types
 
-  internal init(text: String) {
-    var parsedVersion = ""
-    var parsedGuardNames: Set<String> = []
-    var parsedActionNames: Set<String> = []
-    var parsedRules: [String: [ParsedRule]] = ["pairing": [], "session": [], "operation": []]
-    var section = ""
-    var inTransitions = false
-    var current: ParsedRule?
+  fileprivate struct Parser {
+    fileprivate var version = ""
+    fileprivate var guardNames: Set<String> = []
+    fileprivate var actionNames: Set<String> = []
+    fileprivate var rules: [String: [ParsedRule]] = ["pairing": [], "session": [], "operation": []]
+    fileprivate var section = ""
+    fileprivate var inTransitions = false
+    fileprivate var current: ParsedRule?
 
-    func flush() {
-      if let rule = current, !section.isEmpty, parsedRules[section] != nil {
-        parsedRules[section]?.append(rule)
+    fileprivate mutating func flush() {
+      if let rule = current, !section.isEmpty, rules[section] != nil {
+        rules[section]?.append(rule)
       }
       current = nil
     }
 
-    for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
+    fileprivate mutating func feedSection(_ body: String) {
+      flush()
+      let key = body.trimmingCharacters(in: .whitespaces).split(separator: ":", maxSplits: 1)[0]
+      inTransitions = String(key) == "transitions"
+      if !inTransitions {
+        if section == "guards" { guardNames.insert(String(key)) }
+        if section == "actions" { actionNames.insert(String(key)) }
+      }
+    }
+
+    fileprivate mutating func feedLine(_ rawLine: Substring) {
       let line = String(rawLine)
-      if line.trimmingCharacters(in: .whitespaces).hasPrefix("#") { continue }
-      let body = Self.stripComment(line)
-      if body.trimmingCharacters(in: .whitespaces).isEmpty { continue }
+      if line.trimmingCharacters(in: .whitespaces).hasPrefix("#") { return }
+      let body = ModelReader.stripComment(line)
+      if body.trimmingCharacters(in: .whitespaces).isEmpty { return }
       let indent = body.prefix { $0 == " " }.count
 
       if indent == 0 {
@@ -51,40 +58,46 @@ internal struct ModelReader {
         section = String(name)
         if section == "document_version" {
           let quoted = CharacterSet(charactersIn: "\"")
-          parsedVersion = Self.value(of: body).trimmingCharacters(in: quoted)
+          version = ModelReader.value(of: body).trimmingCharacters(in: quoted)
         }
-        continue
+        return
       }
 
       if indent == modelIndentSection {
-        flush()
-        let key = body.trimmingCharacters(in: .whitespaces).split(separator: ":", maxSplits: 1)[0]
-        inTransitions = String(key) == "transitions"
-        if !inTransitions {
-          if section == "guards" { parsedGuardNames.insert(String(key)) }
-          if section == "actions" { parsedActionNames.insert(String(key)) }
-        }
-        continue
+        feedSection(body)
+        return
       }
 
-      guard inTransitions else { continue }
+      guard inTransitions else { return }
       let trimmed = body.trimmingCharacters(in: .whitespaces)
       if indent == modelIndentRule, trimmed.hasPrefix("- ") {
         flush()
         var rule = ParsedRule()
-        Self.assign(String(trimmed.dropFirst(ruleMarkerLength)), into: &rule)
+        ModelReader.assign(String(trimmed.dropFirst(ruleMarkerLength)), into: &rule)
         current = rule
       } else if indent >= modelIndentRuleField, var rule = current {
-        Self.assign(trimmed, into: &rule)
+        ModelReader.assign(trimmed, into: &rule)
         current = rule
       }
     }
-    flush()
+  }
 
-    self.documentVersion = parsedVersion
-    self.guardNames = parsedGuardNames
-    self.actionNames = parsedActionNames
-    self.rules = parsedRules
+  internal let documentVersion: String
+  internal let guardNames: Set<String>
+  internal let actionNames: Set<String>
+  internal let rules: [String: [ParsedRule]]
+
+  internal init(text: String) {
+    var parser = Parser()
+    for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
+      parser.feedLine(rawLine)
+    }
+    parser.flush()
+
+    self.documentVersion = parser.version
+    self.guardNames = parser.guardNames
+    self.actionNames = parser.actionNames
+    self.rules = parser.rules
   }
 
   private static func stripComment(_ line: String) -> String {

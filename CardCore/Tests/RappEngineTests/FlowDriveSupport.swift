@@ -4,8 +4,16 @@
 // session over the pair, for every suite that needs a live channel.
 
 import Foundation
+import Testing
 
 @testable import RappEngine
+
+internal func check(_ passed: Bool, _ label: String) {
+  #expect(passed, "\(label)")
+}
+
+/// Flips every bit it touches: the tamper the failure paths drive.
+internal let tamperByteMask: UInt8 = 0xff
 
 internal func randomBytes(_ count: Int) -> Data {
   var generator = SystemRandomNumberGenerator()
@@ -84,11 +92,13 @@ internal func runPairing(
 ) throws -> PairedPeers {
   let deadline = try PairingOfferDeadline(offer: offer, startedAtMilliseconds: 0)
   var requester = try PairingHandshake.begin(
-    role: .requester, offer: offer, candidateIdentifier: candidateIdentifier,
-    localKeys: PairKeyMaterial(), deadline: deadline, nowMilliseconds: nowMilliseconds)
+    .init(
+      role: .requester, offer: offer, candidateIdentifier: candidateIdentifier,
+      localKeys: PairKeyMaterial(), deadline: deadline, nowMilliseconds: nowMilliseconds))
   var proxy = try PairingHandshake.begin(
-    role: .proxy, offer: offer, candidateIdentifier: candidateIdentifier,
-    localKeys: PairKeyMaterial(), deadline: deadline, nowMilliseconds: nowMilliseconds)
+    .init(
+      role: .proxy, offer: offer, candidateIdentifier: candidateIdentifier,
+      localKeys: PairKeyMaterial(), deadline: deadline, nowMilliseconds: nowMilliseconds))
 
   try proxy.readMessage(try requester.writeMessage())
   try requester.readMessage(try proxy.writeMessage())

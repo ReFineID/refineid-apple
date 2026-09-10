@@ -6,69 +6,80 @@ import XCTest
 
 /// Wire version hashed into every prologue (specification Section 6).
 internal final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
+  private func checkStaticKeys(
+    _ vector: RappNoiseAndEnvelopeCorpusSupport.NoiseVector
+  ) throws {
+    let initiatorPrivate = try Curve25519.KeyAgreement.PrivateKey(
+      rawRepresentation: decodeHex(vector.testOnlyInitiatorStaticPrivateHex)
+    )
+    let responderPrivate = try Curve25519.KeyAgreement.PrivateKey(
+      rawRepresentation: decodeHex(vector.testOnlyResponderStaticPrivateHex)
+    )
+
+    XCTAssertEqual(
+      encodeHex(initiatorPrivate.publicKey.rawRepresentation),
+      vector.initiatorStaticPublicHex,
+      vector.name
+    )
+    XCTAssertEqual(
+      encodeHex(responderPrivate.publicKey.rawRepresentation),
+      vector.responderStaticPublicHex,
+      vector.name
+    )
+  }
+
+  private func checkPrologue(
+    _ vector: RappNoiseAndEnvelopeCorpusSupport.NoiseVector
+  ) throws {
+    let expectedPrologue: Data
+    let expectedMessageLengths: [Int]
+    switch vector.name {
+    case "pairing-xxpsk3-fixed-transcript":
+      expectedPrologue = encodeArray([
+        encodeText("RAPP-pairing-v1"),
+        encodeArray([
+          encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.major),
+          encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor),
+        ]),
+        encodeText(vector.suite),
+        encodeBytes(decodeHex(try XCTUnwrap(vector.offerHashHex))),
+        encodeText(vector.transportProfile),
+      ])
+      expectedMessageLengths = [48, 96, 64]
+      XCTAssertEqual(decodeHex(try XCTUnwrap(vector.testOnlyPairingSecretHex)).count, 32)
+
+    case "session-kk-fixed-transcript":
+      expectedPrologue = encodeArray([
+        encodeText("RAPP-session-v1"),
+        encodeArray([
+          encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.major),
+          encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor),
+        ]),
+        encodeText(vector.suite),
+        encodeBytes(decodeHex(vector.pairIDHex)),
+        encodeBytes(decodeHex(try XCTUnwrap(vector.grantsHashHex))),
+        encodeText(vector.transportProfile),
+      ])
+      expectedMessageLengths = [48, 48]
+
+    default:
+      XCTFail("Unknown Noise vector: \(vector.name)")
+      return
+    }
+
+    XCTAssertEqual(encodeHex(expectedPrologue), vector.prologueHex, vector.name)
+    XCTAssertEqual(
+      vector.messagesHex.map { decodeHex($0).count }, expectedMessageLengths, vector.name)
+    XCTAssertTrue(vector.messagesHex.allSatisfy { !decodeHex($0).isEmpty }, vector.name)
+  }
+
   internal func testFixedNoiseInputsProloguesAndIdentifiers() throws {
     let corpus = try loadCorpus()
     XCTAssertEqual(corpus.noiseHandshake.count, 2)
 
     for vector in corpus.noiseHandshake {
-      let initiatorPrivate = try Curve25519.KeyAgreement.PrivateKey(
-        rawRepresentation: decodeHex(vector.testOnlyInitiatorStaticPrivateHex)
-      )
-      let responderPrivate = try Curve25519.KeyAgreement.PrivateKey(
-        rawRepresentation: decodeHex(vector.testOnlyResponderStaticPrivateHex)
-      )
-
-      XCTAssertEqual(
-        encodeHex(initiatorPrivate.publicKey.rawRepresentation),
-        vector.initiatorStaticPublicHex,
-        vector.name
-      )
-      XCTAssertEqual(
-        encodeHex(responderPrivate.publicKey.rawRepresentation),
-        vector.responderStaticPublicHex,
-        vector.name
-      )
-
-      let expectedPrologue: Data
-      let expectedMessageLengths: [Int]
-      switch vector.name {
-      case "pairing-xxpsk3-fixed-transcript":
-        expectedPrologue = encodeArray([
-          encodeText("RAPP-pairing-v1"),
-          encodeArray([
-            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.major),
-            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor),
-          ]),
-          encodeText(vector.suite),
-          encodeBytes(decodeHex(try XCTUnwrap(vector.offerHashHex))),
-          encodeText(vector.transportProfile),
-        ])
-        expectedMessageLengths = [48, 96, 64]
-        XCTAssertEqual(decodeHex(try XCTUnwrap(vector.testOnlyPairingSecretHex)).count, 32)
-
-      case "session-kk-fixed-transcript":
-        expectedPrologue = encodeArray([
-          encodeText("RAPP-session-v1"),
-          encodeArray([
-            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.major),
-            encodeUnsigned(RappNoiseAndEnvelopeCorpusSupport.wire.minor),
-          ]),
-          encodeText(vector.suite),
-          encodeBytes(decodeHex(vector.pairIDHex)),
-          encodeBytes(decodeHex(try XCTUnwrap(vector.grantsHashHex))),
-          encodeText(vector.transportProfile),
-        ])
-        expectedMessageLengths = [48, 48]
-
-      default:
-        XCTFail("Unknown Noise vector: \(vector.name)")
-        continue
-      }
-
-      XCTAssertEqual(encodeHex(expectedPrologue), vector.prologueHex, vector.name)
-      XCTAssertEqual(
-        vector.messagesHex.map { decodeHex($0).count }, expectedMessageLengths, vector.name)
-      XCTAssertTrue(vector.messagesHex.allSatisfy { !decodeHex($0).isEmpty }, vector.name)
+      try checkStaticKeys(vector)
+      try checkPrologue(vector)
 
       let handshakeHash = decodeHex(vector.handshakeHashHex)
       XCTAssertEqual(handshakeHash.count, 32, vector.name)

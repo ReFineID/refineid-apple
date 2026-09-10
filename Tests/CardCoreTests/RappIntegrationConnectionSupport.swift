@@ -33,33 +33,41 @@ import Testing
         sender: { frame in try await proxyOutbound.send(frame) },
         closer: { await proxyOutbound.close() }
       )
-      let requester = try RappPairingCoordinator.requester(
-        profiles: RappIntegrationFixtures.profiles,
-        candidates: [
-          .init(
-            profile: RappIntegrationFixtures.transportProfile,
-            candidateID: RappIntegrationFixtures.candidateID,
-            parametersCBOR: Data([0xA0])
-          )
-        ],
-        selectedCandidateID: RappIntegrationFixtures.candidateID,
-        offerLifetimeMilliseconds: 60_000,
-        displayName: "Requester Mac",
-        platform: "macOS",
+      let requester = try makePairingRequester(
         vault: requesterVault,
         transport: requesterTransport
       )
-      let proxy = try RappPairingCoordinator.proxy(
+      let proxy = try makePairingProxy(
         scannedOfferURI: try #require(requester.offerURI),
-        selectedCandidateID: RappIntegrationFixtures.candidateID,
-        displayName: "Authorizer iPhone",
-        platform: "iOS",
         vault: proxyVault,
         transport: proxyTransport
       )
       await requesterOutbound.install { frame in await proxy.receive(frame) }
       await proxyOutbound.install { frame in await requester.receive(frame) }
 
+      let outcomes = try await approvePairedOutcomes(
+        requester: requester,
+        proxy: proxy
+      )
+      return await RappIntegrationFixtures.PairingFixture(
+        requesterVault: requesterVault,
+        proxyVault: proxyVault,
+        requesterSummary: outcomes.requester,
+        proxySummary: outcomes.proxy,
+        requesterFrames: requesterOutbound.snapshot(),
+        proxyFrames: proxyOutbound.snapshot(),
+        requesterPrefix: requesterPrefix,
+        proxyPrefix: proxyPrefix
+      )
+    }
+
+    private static func approvePairedOutcomes(
+      requester: RappPairingCoordinator,
+      proxy: RappPairingCoordinator
+    ) async throws -> (
+      requester: RappPairingCoordinator.PairSummary,
+      proxy: RappPairingCoordinator.PairSummary
+    ) {
       let requesterOutcome = Task {
         try await RappIntegrationAuthorizationSupport.approveAndAwaitPair(
           requester, profiles: RappIntegrationFixtures.profiles
@@ -77,21 +85,56 @@ import Testing
 
       await proxy.transportConnected()
       await requester.transportConnected()
-      return try await RappIntegrationFixtures.PairingFixture(
-        requesterVault: requesterVault,
-        proxyVault: proxyVault,
-        requesterSummary: requesterOutcome.value,
-        proxySummary: proxyOutcome.value,
-        requesterFrames: requesterOutbound.snapshot(),
-        proxyFrames: proxyOutbound.snapshot(),
-        requesterPrefix: requesterPrefix,
-        proxyPrefix: proxyPrefix
+      return try await (requesterOutcome.value, proxyOutcome.value)
+    }
+
+    private static func makePairingRequester(
+      vault: RappDeviceVault,
+      transport: RappClosureFrameTransport
+    ) throws -> RappPairingCoordinator {
+      try RappPairingCoordinator.requester(
+        profiles: RappIntegrationFixtures.profiles,
+        candidates: [
+          .init(
+            profile: RappIntegrationFixtures.transportProfile,
+            candidateID: RappIntegrationFixtures.candidateID,
+            parametersCBOR: RappIntegrationFixtures.FixtureTiming.emptyParametersCBOR
+          )
+        ],
+        selectedCandidateID: RappIntegrationFixtures.candidateID,
+        offerLifetimeMilliseconds: RappIntegrationFixtures.FixtureTiming
+          .pairingOfferLifetimeMilliseconds,
+        displayName: "Requester Mac",
+        platform: "macOS",
+        vault: vault,
+        transport: transport
+      )
+    }
+
+    private static func makePairingProxy(
+      scannedOfferURI: String,
+      vault: RappDeviceVault,
+      transport: RappClosureFrameTransport
+    ) throws -> RappPairingCoordinator {
+      try RappPairingCoordinator.proxy(
+        scannedOfferURI: scannedOfferURI,
+        selectedCandidateID: RappIntegrationFixtures.candidateID,
+        displayName: "Authorizer iPhone",
+        platform: "iOS",
+        vault: vault,
+        transport: transport
       )
     }
 
     internal static func makeConnection(
+      _ fixture: RappIntegrationFixtures.PairingFixture
+    ) async throws -> RappIntegrationFixtures.ConnectionFixture {
+      try await makeConnection(fixture, liveness: RappIntegrationFixtures.liveness)
+    }
+
+    internal static func makeConnection(
       _ fixture: RappIntegrationFixtures.PairingFixture,
-      liveness: RappOperationDriver.Liveness = RappIntegrationFixtures.liveness
+      liveness: RappOperationDriver.Liveness
     ) async throws -> RappIntegrationFixtures.ConnectionFixture {
       let requesterPair = try RappPairRecord.loadFromVault(
         pairId: fixture.requesterSummary.pairID,
@@ -111,7 +154,8 @@ import Testing
           sender: { frame in try await requesterOutbound.send(frame) },
           closer: { await requesterOutbound.close() }
         ),
-        maximumLifetimeMilliseconds: 60_000,
+        maximumLifetimeMilliseconds: RappIntegrationFixtures.FixtureTiming
+          .connectionMaximumLifetimeMilliseconds,
         liveness: liveness
       )
       let proxy = try RappConnectionCoordinator(
@@ -122,7 +166,8 @@ import Testing
           sender: { frame in try await proxyOutbound.send(frame) },
           closer: { await proxyOutbound.close() }
         ),
-        maximumLifetimeMilliseconds: 60_000,
+        maximumLifetimeMilliseconds: RappIntegrationFixtures.FixtureTiming
+          .connectionMaximumLifetimeMilliseconds,
         liveness: liveness
       )
       await requesterOutbound.install { frame in await proxy.receive(frame) }

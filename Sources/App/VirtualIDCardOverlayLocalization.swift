@@ -6,6 +6,27 @@
   import Foundation
 
   internal enum VirtualIDCardOverlayLocalization {
+    private static let scenarioNames:
+      [VirtualIDCard.Scenario: (key: StaticString, defaultValue: String.LocalizationValue)] = [
+        .factoryFreshNearField: ("scenario.factoryFreshNearField", "Factory-fresh NFC card"),
+        .legacyFactoryFreshNearField: (
+          "scenario.legacyFactoryFreshNearField", "Factory-fresh legacy NFC card"
+        ),
+        .partialActivationNearField: (
+          "scenario.partialActivationNearField", "Partially activated NFC card"
+        ),
+        .activatedNearField: ("scenario.activatedNearField", "Activated NFC card"),
+        .registeredNearField: ("scenario.registeredNearField", "Registered NFC identity"),
+        .factoryFreshReader: ("scenario.factoryFreshReader", "Factory-fresh reader card"),
+        .activatedReader: ("scenario.activatedReader", "Activated reader card"),
+        .pin1RecoveryReader: ("scenario.pin1RecoveryReader", "PIN 1 recovery with reader"),
+        .pin2RecoveryReader: ("scenario.pin2RecoveryReader", "PIN 2 recovery with reader"),
+        .pukRecoveryRefusedReader: (
+          "scenario.pukRecoveryRefusedReader", "PUK recovery refused with reader"
+        ),
+        .absent: ("scenario.absent", "No card"),
+      ]
+
     internal static func localizedText(
       _ key: StaticString,
       defaultValue: String.LocalizationValue
@@ -17,50 +38,10 @@
     }
 
     internal static func scenarioName(_ scenario: VirtualIDCard.Scenario) -> String {
-      switch scenario {
-      case .factoryFreshNearField:
-        localizedText(
-          "scenario.factoryFreshNearField",
-          defaultValue: "Factory-fresh NFC card")
-
-      case .legacyFactoryFreshNearField:
-        localizedText(
-          "scenario.legacyFactoryFreshNearField",
-          defaultValue: "Factory-fresh legacy NFC card")
-
-      case .partialActivationNearField:
-        localizedText(
-          "scenario.partialActivationNearField",
-          defaultValue: "Partially activated NFC card")
-
-      case .activatedNearField:
-        localizedText("scenario.activatedNearField", defaultValue: "Activated NFC card")
-
-      case .registeredNearField:
-        localizedText("scenario.registeredNearField", defaultValue: "Registered NFC identity")
-
-      case .factoryFreshReader:
-        localizedText(
-          "scenario.factoryFreshReader",
-          defaultValue: "Factory-fresh reader card")
-
-      case .activatedReader:
-        localizedText("scenario.activatedReader", defaultValue: "Activated reader card")
-
-      case .pin1RecoveryReader:
-        localizedText("scenario.pin1RecoveryReader", defaultValue: "PIN 1 recovery with reader")
-
-      case .pin2RecoveryReader:
-        localizedText("scenario.pin2RecoveryReader", defaultValue: "PIN 2 recovery with reader")
-
-      case .pukRecoveryRefusedReader:
-        localizedText(
-          "scenario.pukRecoveryRefusedReader",
-          defaultValue: "PUK recovery refused with reader")
-
-      case .absent:
-        localizedText("scenario.absent", defaultValue: "No card")
+      guard let entry = scenarioNames[scenario] else {
+        preconditionFailure("Missing scenario name")
       }
+      return localizedText(entry.key, defaultValue: entry.defaultValue)
     }
 
     internal static func generationName(_ generation: VirtualIDCard.Generation) -> String {

@@ -104,7 +104,7 @@ extension RappOperationBridge {
   }
 
   /// Begins a browser authentication over an already-hashed challenge.
-  public func beginBrowserAuthentication(
+  public func beginBrowserAuthentication(  // swiftlint:disable:this function_parameter_count
     operationId: Data,
     origin: String,
     keyProfile: RappCardKeyProfile,
@@ -121,7 +121,7 @@ extension RappOperationBridge {
   }
 
   /// Begins a document signature over a document digest.
-  public func beginSignDocument(
+  public func beginSignDocument(  // swiftlint:disable:this function_parameter_count
     operationId: Data,
     documentName: String,
     keyProfile: RappCardKeyProfile,

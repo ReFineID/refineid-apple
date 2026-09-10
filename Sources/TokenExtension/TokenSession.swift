@@ -1,6 +1,7 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 @_spi(TokenExtension) import CardCore
+// swiftlint:disable:previous attributes
 import CryptoTokenKit
 import Foundation
 import Security

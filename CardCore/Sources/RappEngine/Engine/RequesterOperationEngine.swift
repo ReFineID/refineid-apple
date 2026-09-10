@@ -30,6 +30,17 @@ internal struct RequesterOperationEngine {
       response: .error(.unknownOperation(operationIdentifier: operationIdentifier)))
   }
 
+  /// A peer error carries no operation state, so it classifies directly.
+  private static func errorDispatch(_ error: ProtocolErrorMessage) -> RequesterDispatch {
+    switch error {
+    case .busy:
+      .peerBusy
+
+    case .unknownOperation(let operationIdentifier):
+      .peerUnknownOperation(operationIdentifier: operationIdentifier)
+    }
+  }
+
   /// Writes a unique operation before its request frame is released.
   internal mutating func begin(
     _ request: OperationRequest, store: inout some RequesterJournalStore
@@ -72,13 +83,7 @@ internal struct RequesterOperationEngine {
       return try receiveStatus(report, store: &store)
     }
     if case .error(let error) = message {
-      return switch error {
-      case .busy:
-        .peerBusy
-
-      case .unknownOperation(let operationIdentifier):
-        .peerUnknownOperation(operationIdentifier: operationIdentifier)
-      }
+      return Self.errorDispatch(error)
     }
     guard let operationIdentifier = message.referencedOperationIdentifier else {
       return .notOperation(message)

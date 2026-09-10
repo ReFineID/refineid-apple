@@ -10,11 +10,52 @@ import Testing
   import RappEngine
   internal enum RappIntegrationAuthorizationSupport {
     // MARK: Static Functions
+    private static func requireExpected(
+      _ operation: RappOperationDriver.Operation,
+      expected: RappIntegrationFixtures.RequestedOperation
+    ) throws {
+      guard expected.matches(operation) else {
+        throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
+      }
+    }
+
+    private static func applyTermination(
+      _ termination: RappIntegrationFixtures.ProxyTermination,
+      operationID: Data,
+      coordinator: RappConnectionCoordinator,
+      progress: inout RappIntegrationFixtures.ProxyProgress
+    ) async throws {
+      switch termination {
+      case .cardRemovedBeforeTransmit:
+        try await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
+
+      case .cardCompletionAmbiguous:
+        progress.executions += 1
+        try await coordinator.cardCompletionAmbiguous(operationID: operationID)
+
+      case .userDenied, .retryPolicyRefused:
+        throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
+      }
+    }
+
+    internal static func authorizeAndComplete(
+      _ coordinator: RappConnectionCoordinator,
+      operation expected: RappIntegrationFixtures.RequestedOperation,
+      signature: Data
+    ) async throws -> RappIntegrationFixtures.ProxyProgress {
+      try await authorizeAndComplete(
+        coordinator,
+        operation: expected,
+        signature: signature,
+        cardHoldMilliseconds: 0
+      )
+    }
+
     internal static func authorizeAndComplete(
       _ coordinator: RappConnectionCoordinator,
       operation expected: RappIntegrationFixtures.RequestedOperation,
       signature: Data,
-      cardHoldMilliseconds: UInt64 = 0
+      cardHoldMilliseconds: UInt64
     ) async throws -> RappIntegrationFixtures.ProxyProgress {
       var progress = RappIntegrationFixtures.ProxyProgress()
       for await event in coordinator.events {
@@ -23,23 +64,17 @@ import Testing
           break
 
         case .inspectPrerequisites(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.prerequisites += 1
           try await coordinator.prerequisitesComplete(operationID: operationID)
 
         case .awaitUserApproval(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.approvals += 1
           try await coordinator.approve(operationID: operationID)
 
         case .executeCardCommand(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.executions += 1
           // The antenna's share of the operation, where the proxy is busy
           // with the card and answers nothing else.
@@ -80,23 +115,17 @@ import Testing
           break
 
         case .inspectPrerequisites(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.prerequisites += 1
           try await coordinator.prerequisitesComplete(operationID: operationID)
 
         case .awaitUserApproval(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.approvals += 1
           try await coordinator.approve(operationID: operationID)
 
         case .executeCardCommand(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.executions += 1
           try await coordinator.credentialRejected(operationID: operationID)
           return progress
@@ -127,9 +156,7 @@ import Testing
           break
 
         case .inspectPrerequisites(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.prerequisites += 1
           if termination == .retryPolicyRefused {
             try await coordinator.retryRefused(operationID: operationID)
@@ -138,9 +165,7 @@ import Testing
           try await coordinator.prerequisitesComplete(operationID: operationID)
 
         case .awaitUserApproval(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
           progress.approvals += 1
           if termination == .userDenied {
             try await coordinator.deny(operationID: operationID)
@@ -149,20 +174,13 @@ import Testing
           try await coordinator.approve(operationID: operationID)
 
         case .executeCardCommand(let operationID, let operation):
-          guard expected.matches(operation) else {
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
-          switch termination {
-          case .cardRemovedBeforeTransmit:
-            try await coordinator.cardRemovedBeforeTransmit(operationID: operationID)
-
-          case .cardCompletionAmbiguous:
-            progress.executions += 1
-            try await coordinator.cardCompletionAmbiguous(operationID: operationID)
-
-          case .userDenied, .retryPolicyRefused:
-            throw RappIntegrationFixtures.TestFailure.unexpectedConnectionEvent
-          }
+          try requireExpected(operation, expected: expected)
+          try await applyTermination(
+            termination,
+            operationID: operationID,
+            coordinator: coordinator,
+            progress: &progress
+          )
           return progress
 
         case .terminal(_, _, let reason):

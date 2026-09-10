@@ -277,7 +277,16 @@ public final class SecureMessagingChannel: CardChannel {
   private func unwrap(_ body: Data) throws -> (payload: Data, status: Data) {
     incrementSendSequenceCounter()
     let objects = try Self.responseObjects(in: body)
+    try verifyMac(objects)
+    guard let cryptogram = objects.cryptogram else {
+      return (Data(), objects.status)
+    }
+    return (try decryptCryptogram(cryptogram), objects.status)
+  }
 
+  /// Recomputes the response checksum over the counter and the data
+  /// objects RE-ENCODED from their parsed values and refuses a mismatch.
+  private func verifyMac(_ objects: ResponseObjects) throws {
     var macInput = sendSequenceCounter
     if let cryptogram = objects.cryptogram {
       guard
@@ -306,10 +315,10 @@ public final class SecureMessagingChannel: CardChannel {
     guard ConstantTimeComparison.equal(computed, objects.mac) else {
       throw Failure.macMismatch
     }
+  }
 
-    guard let cryptogram = objects.cryptogram else {
-      return (Data(), objects.status)
-    }
+  /// Strips the padding indicator and decrypts one response cryptogram.
+  private func decryptCryptogram(_ cryptogram: CryptogramObject) throws -> Data {
     let ciphertext: Data
     switch cryptogram.tag {
     case PaceValues.oddInstructionCryptogramTag:
@@ -332,7 +341,7 @@ public final class SecureMessagingChannel: CardChannel {
       initializationVector: try currentInitializationVector(),
       ciphertext: ciphertext
     )
-    return (Self.unpadded(plaintext), objects.status)
+    return Self.unpadded(plaintext)
   }
 
   /// The CBC initialization vector for the current counter value: the

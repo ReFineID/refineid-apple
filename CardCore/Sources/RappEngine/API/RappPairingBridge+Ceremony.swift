@@ -7,7 +7,7 @@ extension RappPairingBridge {
   ///
   /// - Throws: ``RappBindingError/InvalidInput`` when a value is malformed or
   ///   the lifetime exceeds the specification's ceiling.
-  public static func createRequesterOffer(
+  public static func createRequesterOffer(  // swiftlint:disable:this function_parameter_count
     offerId: Data,
     pairingSecret: Data,
     profiles: [String],
@@ -130,12 +130,13 @@ extension RappPairingBridge {
       do {
         phase = .handshaking(
           try PairingHandshake.begin(
-            role: role,
-            offer: offer,
-            candidateIdentifier: candidateId,
-            localKeys: localKeys,
-            deadline: deadline,
-            nowMilliseconds: nowMonotonicMs))
+            .init(
+              role: role,
+              offer: offer,
+              candidateIdentifier: candidateId,
+              localKeys: localKeys,
+              deadline: deadline,
+              nowMilliseconds: nowMonotonicMs)))
       } catch let failure as PairingAttemptFailure {
         throw Self.bindingError(failure.error)
       } catch {

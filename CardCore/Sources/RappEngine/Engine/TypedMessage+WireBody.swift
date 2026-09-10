@@ -44,6 +44,7 @@ extension TypedMessage {
   /// through `encodedBody()`. A message outside the operation protocol has no
   /// body here either, because its own layer owns that encoding.
   internal func wireBody() throws -> [String: WireValue]? {
+    // swiftlint:disable:previous discouraged_optional_collection
     switch self {
     case .operationRequest(let request):
       try request.wireBody()

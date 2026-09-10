@@ -16,6 +16,13 @@ extension CardMaintenance {
     internal let snapshot: Snapshot?
   }
 
+  /// The credential acted on and the credential whose restored retry
+  /// allowance confirms the mutation.
+  private struct CredentialFloor {
+    fileprivate let role: CredentialRole
+    fileprivate let confirming: CredentialRole
+  }
+
   internal static func snapshot(
     transport: Transport,
     cardAccessNumber: String?
@@ -102,8 +109,7 @@ extension CardMaintenance {
       }
     #endif
     return await withFloor(
-      .pin1,
-      confirming: .pin1,
+      CredentialFloor(role: .pin1, confirming: .pin1),
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 1 is changed.")
@@ -138,8 +144,7 @@ extension CardMaintenance {
       }
     #endif
     return await withFloor(
-      .pin2,
-      confirming: .pin2,
+      CredentialFloor(role: .pin2, confirming: .pin2),
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 2 is changed.")
@@ -174,8 +179,7 @@ extension CardMaintenance {
       }
     #endif
     return await withFloor(
-      .puk,
-      confirming: .pin1,
+      CredentialFloor(role: .puk, confirming: .pin1),
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 1 is reset.")
@@ -207,8 +211,7 @@ extension CardMaintenance {
       }
     #endif
     return await withFloor(
-      .puk,
-      confirming: .pin2,
+      CredentialFloor(role: .puk, confirming: .pin2),
       transport: transport,
       cardAccessNumber: cardAccessNumber,
       message: String(localized: "Hold the card still while PIN 2 is reset.")
@@ -229,8 +232,7 @@ extension CardMaintenance {
   }
 
   private static func withFloor(
-    _ role: CredentialRole,
-    confirming target: CredentialRole,
+    _ floor: CredentialFloor,
     transport: Transport,
     cardAccessNumber: String?,
     message: String,
@@ -241,7 +243,7 @@ extension CardMaintenance {
       cardAccessNumber: cardAccessNumber,
       message: message
     ) { operations -> MutationReport in
-      guard let probe = try? operations.probeRetryCounter(role: role) else {
+      guard let probe = try? operations.probeRetryCounter(role: floor.role) else {
         return MutationReport(
           outcome: .floorRefused(.refuseUnreadable),
           snapshot: snapshot(on: operations)
@@ -257,7 +259,7 @@ extension CardMaintenance {
       let outcome = operation(operations)
       let resultingSnapshot = snapshot(on: operations)
       let confirmedOutcome =
-        outcome == .success && !confirmsRestored(target, in: resultingSnapshot)
+        outcome == .success && !confirmsRestored(floor.confirming, in: resultingSnapshot)
         ? .failed
         : outcome
       return MutationReport(
