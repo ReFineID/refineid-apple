@@ -211,6 +211,7 @@ internal struct CredentialChangeSection: View {
       name: String(localized: "Current \(credential.everydayName)"),
       text: $current,
       revealIdentifier: "managementChange\(credential.identifierName)CurrentReveal",
+      fieldIdentifier: "managementChange\(credential.identifierName)Current",
       field: {
         SecureField("Current \(credential.everydayName)", text: $current)
           .textContentType(.oneTimeCode)
@@ -235,6 +236,7 @@ internal struct CredentialChangeSection: View {
       name: String(localized: "New \(credential.everydayName)"),
       text: $new,
       revealIdentifier: "managementChange\(credential.identifierName)NewReveal",
+      fieldIdentifier: "managementChange\(credential.identifierName)New",
       field: {
         SecureField("New \(credential.everydayName)", text: $new)
           .textContentType(.oneTimeCode)
@@ -259,6 +261,7 @@ internal struct CredentialChangeSection: View {
       name: credential.everydayNameRepeated,
       text: $repeated,
       revealIdentifier: "managementChange\(credential.identifierName)RepeatReveal",
+      fieldIdentifier: "managementChange\(credential.identifierName)Repeat",
       field: {
         SecureField(credential.everydayNameRepeated, text: $repeated)
           .textContentType(.oneTimeCode)

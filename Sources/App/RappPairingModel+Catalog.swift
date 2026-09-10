@@ -66,6 +66,10 @@ extension RappPairingModel {
   }
 
   internal func revokeAll() {
+    #if DEBUG
+      // A revoked pretend pairing stays revoked.
+      pretendPaired = false
+    #endif
     #if REFINEID_LOCAL_CARD && os(iOS)
       PhonePersistentTokenRelay.shared.stopListening()
     #endif

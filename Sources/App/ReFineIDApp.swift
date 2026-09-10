@@ -123,11 +123,12 @@ internal struct ReFineIDApp: App {
   }
 
   /// The screen for this launch, before the app-wide modifiers.
+  ///
+  /// Test isolation lives in the credential stores, not here: UI-test
+  /// launches render the real holder content so the suites can drive it.
   @ViewBuilder private var contentForLaunchMode: some View {
     #if DEBUG
-      if TestCredentialEnvironment.isTestMode {
-        EmptyView()
-      } else if let mode = DebugLaunchModes.sceneMode {
+      if let mode = DebugLaunchModes.sceneMode {
         DebugSceneRunnerView(mode: mode)
       } else {
         holderContent
@@ -177,8 +178,8 @@ internal struct ReFineIDApp: App {
   }
 
   internal init() {
-    guard !TestCredentialEnvironment.isTestMode else { return }
-
+    // No test-mode early return: the credential stores isolate
+    // themselves, and UI-test launches need the launch modes below.
     #if os(macOS)
       Self.configurePlatformDefaults()
     #endif

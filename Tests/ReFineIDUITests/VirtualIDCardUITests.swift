@@ -80,8 +80,8 @@
       assertScenario("absent", destination: .cardAccessNumber)
     }
 
-    internal func testFaultPresetNoneIsConfiguredThroughGUI() {
-      assertFaultPreset("none")
+    internal func testFaultPresetNoFaultIsConfiguredThroughGUI() {
+      assertFaultPreset("noFault")
     }
 
     internal func testFaultPresetNFCDisconnectIsConfiguredThroughGUI() {

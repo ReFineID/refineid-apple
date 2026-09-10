@@ -71,6 +71,11 @@ internal final class RappPairingModel: ObservableObject {
 
   @Published internal var phase = Phase.idle
   @Published internal var pairs: [RappPairingCoordinator.PairSummary] = []
+  /// A `--pretend-paired` launch starts the row paired; revoking clears it.
+  ///
+  /// The vault stays empty: nothing here is cryptographic, it only drives
+  /// the pairing row through its states for the UI suites.
+  @Published internal var pretendPaired = false
   @Published internal var selectedPairID: Data?
   @Published internal var pairingCode: String?
 
@@ -103,6 +108,9 @@ internal final class RappPairingModel: ObservableObject {
       if ProcessInfo.processInfo.arguments.contains("--mock-remote-connected") {
         return true
       }
+      if pretendPaired {
+        return true
+      }
     #endif
     return !pairs.isEmpty
   }
@@ -111,6 +119,11 @@ internal final class RappPairingModel: ObservableObject {
     let newVault = RappDeviceVault()
     self.vault = newVault
     self.catalog = RappPairCatalog(vault: newVault)
+    #if DEBUG
+      if ProcessInfo.processInfo.arguments.contains("--pretend-paired") {
+        pretendPaired = true
+      }
+    #endif
   }
 
   internal init(vault: RappDeviceVault) {
@@ -214,20 +227,6 @@ internal final class RappPairingModel: ObservableObject {
     ) { [weak self] event in
       Task { @MainActor in self?.receive(event, generation: generation) }
     }
-  }
-
-  internal func makeTransport(
-    relay: PairingRelay
-  ) -> RappClosureFrameTransport {
-    RappClosureFrameTransport(
-      sender: { [weak relay] frame in
-        guard let relay else {
-          throw PersistentRelayTransportError.disconnected
-        }
-        try await relay.send(frame)
-      },
-      closer: { [weak relay] in relay?.cancel() }
-    )
   }
 
   internal func install(

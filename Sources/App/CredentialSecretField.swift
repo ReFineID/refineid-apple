@@ -26,6 +26,7 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
 
   private let name: String
   private let revealIdentifier: String
+  private let fieldIdentifier: String?
   private let field: () -> Field
   private let validation: () -> Validation
 
@@ -43,19 +44,33 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
 
   // MARK: Content Properties
 
+  /// The revealed field keeps the hidden field's identifier, so one
+  /// stable name finds the value in either state.
+  @ViewBuilder private var revealedField: some View {
+    if let fieldIdentifier {
+      revealedInput.accessibilityIdentifier(fieldIdentifier)
+    } else {
+      revealedInput
+    }
+  }
+
+  private var revealedInput: some View {
+    TextField(name, text: $text)
+      .textContentType(.oneTimeCode)
+      #if os(iOS)
+        .keyboardType(.numberPad)
+      #endif
+      .autocorrectionDisabled()
+      .lineLimit(lineLimit)
+      .onValueChange(of: text) { value in
+        text = LimitedDigits.puk(value)
+      }
+  }
+
   private var inputGroup: some View {
     Group {
       if revealsValue {
-        TextField(name, text: $text)
-          .textContentType(.oneTimeCode)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .autocorrectionDisabled()
-          .lineLimit(lineLimit)
-          .onValueChange(of: text) { value in
-            text = LimitedDigits.puk(value)
-          }
+        revealedField
       } else {
         field()
       }
@@ -109,9 +124,28 @@ internal struct CredentialSecretField<Field: View, Validation: View>: View {
     @ViewBuilder field: @escaping () -> Field,
     @ViewBuilder validation: @escaping () -> Validation
   ) {
+    self.init(
+      name: name,
+      text: text,
+      revealIdentifier: revealIdentifier,
+      fieldIdentifier: nil,
+      field: field,
+      validation: validation
+    )
+  }
+
+  internal init(
+    name: String,
+    text: Binding<String>,
+    revealIdentifier: String,
+    fieldIdentifier: String?,
+    @ViewBuilder field: @escaping () -> Field,
+    @ViewBuilder validation: @escaping () -> Validation
+  ) {
     self.name = name
     self._text = text
     self.revealIdentifier = revealIdentifier
+    self.fieldIdentifier = fieldIdentifier
     self.field = field
     self.validation = validation
   }
