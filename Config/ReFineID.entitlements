@@ -16,5 +16,9 @@
 	<array>
 		<string>group.fi.refineid.RefineID</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)fi.refineid.ReFineID</string>
+	</array>
 </dict>
 </plist>

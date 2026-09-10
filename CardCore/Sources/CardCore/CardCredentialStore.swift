@@ -60,7 +60,7 @@ public enum CardCredentialStore {
   internal static let service = "fi.refineid.credentials"
 
   /// Account for the card access number.
-  private static let cardAccessNumberAccount = "can"
+  internal static let cardAccessNumberAccount = "can"
 
   /// Account for PIN1, present only when the holder opted in.
   private static let pin1Account = "pin1"
@@ -107,11 +107,20 @@ public enum CardCredentialStore {
     var digits = read(account: cardAccessNumberAccount).map { Data($0.utf8) }
     #if os(macOS)
       if digits == nil {
-        digits = OfferedAccessNumber.digits().map { Data($0.utf8) }
+        digits = CardCanOffer.offeredDigits().map { Data($0.utf8) }
       }
     #endif
     guard let digits else { return nil }
     return Data(SHA256.hash(data: digits))
+  }
+
+  /// The opaque fingerprint of one number, for refusal latching.
+  ///
+  /// Never convertible back to digits, which is what stops a wrong
+  /// number from being retried against the card for as long as it
+  /// rests on the antenna.
+  public static func fingerprint(canDigits: String) -> Data {
+    Data(SHA256.hash(data: Data(canDigits.utf8)))
   }
 
   /// Hands the stored card access number to the token driver, for the
@@ -149,7 +158,7 @@ public enum CardCredentialStore {
   /// entry earlier versions published, which must not outlive them.
   public static func withdrawCardAccessNumberFromDriver() {
     #if os(macOS)
-      OfferedAccessNumber.withdraw()
+      CardCanOffer.withdraw()
       DriverConfiguredCredentials.withdraw()
     #endif
   }
@@ -159,14 +168,14 @@ public enum CardCredentialStore {
   /// of its own to say so in.
   public static func recordOfferedNumberRefusal() {
     #if os(macOS)
-      OfferedAccessNumber.recordRefusal()
+      CardCanOffer.recordRefusal()
     #endif
   }
 
   /// Whether the offered number stands refused by the card.
   public static func offeredNumberWasRefused() -> Bool {
     #if os(macOS)
-      return OfferedAccessNumber.refusalRecorded()
+      return CardCanOffer.refusalRecorded()
     #else
       return false
     #endif
@@ -175,7 +184,7 @@ public enum CardCredentialStore {
   /// Clears a recorded refusal, for the offer that succeeded.
   public static func clearOfferedNumberRefusal() {
     #if os(macOS)
-      OfferedAccessNumber.clearRefusal()
+      CardCanOffer.clearRefusal()
     #endif
   }
 
@@ -219,14 +228,48 @@ public enum CardCredentialStore {
     {
       return stored
     }
-    // The app's offer in the group container, which on macOS is the
-    // only copy the driver can read. Second rather than first, so the
-    // keychain stays the source of truth wherever it is readable.
+    // The app's offer in the shared keychain group, which on macOS is
+    // the only copy the driver can read. Second rather than first, so
+    // the keychain stays the source of truth wherever it is readable.
     #if os(macOS)
-      return OfferedAccessNumber.digits().flatMap(CardAccessNumber.init(digits:))
+      return CardCanOffer.offeredDigits().flatMap(CardAccessNumber.init(digits:))
     #else
       return nil
     #endif
+  }
+
+  /// Every stored number to try, active offer first.
+  ///
+  /// A card answers with no individual identifier before PACE, so one
+  /// stored number cannot be selected for it: the driver tries each in
+  /// turn until one mints.
+  public static func cardAccessNumberCandidates() -> [CardCanOffer.Candidate] {
+    #if os(macOS)
+      var strings: [String] = []
+      if let stored = read(account: cardAccessNumberAccount) {
+        strings.append(stored)
+      }
+      for candidate in CardCanOffer.candidates()
+      where !strings.contains(candidate.digits) {
+        strings.append(candidate.digits)
+      }
+      return strings.compactMap { digits in
+        CardAccessNumber(digits: digits).map { number in
+          CardCanOffer.Candidate(digits: digits, number: number)
+        }
+      }
+    #else
+      return cardAccessNumber().map { CardCanOffer.Candidate(digits: "", number: $0) } ?? []
+    #endif
+  }
+
+  /// Remembers working digits for the card with this token serial.
+  ///
+  /// Called by the driver after a number mints: the serial is known
+  /// only once PACE has run, so the library grows one card at a time.
+  public static func rememberCan(digits: String, tokenSerial: TokenSerial) {
+    guard let printed = PrintedCardSerial(tokenSerial: tokenSerial) else { return }
+    CardCanOffer.remember(digits: digits, printedSerial: printed.value)
   }
 
   /// The keychain's own answer to "could the card access number be read
@@ -327,8 +370,7 @@ public enum CardCredentialStore {
       name: cardAccessNumberDidInvalidate,
       object: nil)
     #if os(macOS)
-      OfferedAccessNumber.withdraw()
-      DriverConfiguredCredentials.withdraw()
+      withdrawCardAccessNumberFromDriver()
     #endif
   }
 
@@ -348,8 +390,7 @@ public enum CardCredentialStore {
     delete(account: pin1Account)
     delete(account: pin2Account)
     #if os(macOS)
-      OfferedAccessNumber.withdraw()
-      DriverConfiguredCredentials.withdraw()
+      withdrawCardAccessNumberFromDriver()
     #endif
   }
 }
