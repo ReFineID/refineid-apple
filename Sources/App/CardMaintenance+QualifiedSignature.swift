@@ -90,6 +90,7 @@ extension CardMaintenance {
     guard let identity = Self.qualifiedIdentity(operations) else {
       return .refused(.failed)
     }
+    Self.cacheCardAuthorities(for: identity.certificate, operations: operations)
     guard
       Self.qualifiedCertificate(
         identity.certificate, matches: expectedCertificate
@@ -137,6 +138,24 @@ extension CardMaintenance {
     matches expectedCertificate: Data?
   ) -> Bool {
     expectedCertificate.map { certificate == $0 } ?? true
+  }
+
+  /// Caches the card's issuing and root certificates in this process.
+  ///
+  /// The evidence walk ends only at an explicitly approved anchor,
+  /// and this session's process holds none until the card is asked.
+  /// Best effort: a card without those files still signs, and the
+  /// walk reports the missing anchor instead of partial evidence.
+  private static func cacheCardAuthorities(
+    for leaf: Data,
+    operations: CardOperations
+  ) {
+    guard TrustRootsCache.shared.der(matching: leaf) == nil else { return }
+    let issuer = try? operations.readCertificate(.issuing)
+    let root = try? operations.readCertificate(.root)
+    _ = TrustRootsCache.shared.ensureIssuer(
+      for: leaf, cardIssuer: issuer, cardRoot: root
+    )
   }
 
   /// Reads and classifies the qualified certificate without spending PIN2.

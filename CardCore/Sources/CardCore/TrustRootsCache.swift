@@ -109,6 +109,29 @@ public final class TrustRootsCache: @unchecked Sendable {
     return nil
   }
 
+  /// Registers card-supplied CA certificates when the cache holds no
+  /// issuer for `leafDER`, and answers the match.
+  ///
+  /// Evidence collection ends only at an explicitly approved anchor,
+  /// and only this process's cache can supply it: registrations made
+  /// in another process never arrive here.
+  public func ensureIssuer(
+    for leafDER: Data,
+    cardIssuer: Data?,
+    cardRoot: Data?
+  ) -> Data? {
+    if let cached = der(matching: leafDER) {
+      return cached
+    }
+    if let cardIssuer {
+      register(cardIssuer)
+    }
+    if rootCertificate == nil, let cardRoot {
+      registerRoot(cardRoot)
+    }
+    return der(matching: leafDER)
+  }
+
   /// Checks whether a SHA-256 fingerprint matches any cached CA certificate.
   public func containsFingerprint(_ fingerprint: Data) -> Bool {
     lock.lock()
