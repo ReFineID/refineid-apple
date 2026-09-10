@@ -22,6 +22,17 @@ internal struct ReFineIDApp: App {
   #endif
 
   #if os(macOS)
+    /// The status window's opening size.
+    ///
+    /// Content sizing keeps it fitted afterwards; this only stops the
+    /// pairing invitation's one long line from deciding the width.
+    private enum StatusLayout {
+      static let windowWidth: CGFloat = 720
+      static let windowHeight: CGFloat = 520
+    }
+  #endif
+
+  #if os(macOS)
     /// Title drawn in the macOS main window title bar.
     internal static var statusWindowTitle: String {
       #if DEBUG
@@ -52,6 +63,7 @@ internal struct ReFineIDApp: App {
         rootContent
           .windowFullScreenBehavior(.disabled)
       }
+      .defaultSize(width: StatusLayout.windowWidth, height: StatusLayout.windowHeight)
       .windowResizability(.contentSize)
       // No help book ships, so the Help menu it would open does not
       // belong. Replacing the group with nothing leaves the menu with
