@@ -11,13 +11,16 @@ import ObjCExceptionGuard
 /// `driverConfigurations` is populated for the hosting application
 /// only - every other caller, the token driver itself included, is
 /// handed an empty store - so a number written here was unreadable
-/// exactly where it was needed. `OfferedAccessNumber` carries it now,
-/// through the app group container both processes can read.
+/// exactly where it was needed. `CardCanOffer` carries it now, in the
+/// shared keychain group both processes can read.
 ///
 /// What remains here is the store as the system lists it: the named
 /// entry earlier versions published, withdrawn so it does not outlive
 /// them, and the identity configurations the debug reset drops.
 public enum DriverConfiguredCredentials {
+  /// Serializes the configuration reads below.
+  private static let lock = NSLock()
+
   /// The driver whose configuration this is: `com.apple.ctk.class-id`
   /// in the token extension's Info.plist.
   private static let classID = CardTokenNamespace.driverClassIdentifier
@@ -48,13 +51,19 @@ public enum DriverConfiguredCredentials {
   /// `ctkd`, and a daemon mid-restart can answer it with an
   /// Objective-C exception instead of a value. Caught, that answer
   /// becomes what it means here - no store readable right now.
+  ///
+  /// Serialized: opening the configuration connection from two threads
+  /// at once traps inside `xpc_connection_resume`, and that trap is a
+  /// process signal no exception guard can catch.
   private static var configuration: TKTokenDriver.Configuration? {
-    var stores: [String: TKTokenDriver.Configuration] = [:]
-    let raised = CardCoreCatchException {
-      stores = TKTokenDriver.Configuration.driverConfigurations
+    lock.withLock {
+      var stores: [String: TKTokenDriver.Configuration] = [:]
+      let raised = CardCoreCatchException {
+        stores = TKTokenDriver.Configuration.driverConfigurations
+      }
+      guard raised == nil else { return nil }
+      return stores[Self.classID]
     }
-    guard raised == nil else { return nil }
-    return stores[Self.classID]
   }
 
   /// Drops only card-identity configurations, preserving stored setup.

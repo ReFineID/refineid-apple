@@ -36,6 +36,12 @@ public enum TestCredentialEnvironment {
     _ = lock.withLock { credentials.removeValue(forKey: account) }
   }
 
+  internal static func credentialAccounts(prefix: String, suffix: String) -> [String] {
+    lock.withLock {
+      credentials.keys.filter { $0.hasPrefix(prefix) && $0.hasSuffix(suffix) }.sorted()
+    }
+  }
+
   internal static func readPrime(account: String) -> Data? {
     lock.withLock { primedIdentities[account] }
   }

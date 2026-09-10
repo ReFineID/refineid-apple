@@ -4,13 +4,33 @@ import Foundation
 import Security
 
 extension CardCredentialStore {
+  /// Suffix of the keychain group the app and its extensions share.
+  internal static let sharedKeychainGroupSuffix = "fi.refineid.ReFineID"
+
+  /// The shared group, or nil where no entitlement names one.
+  ///
+  /// Read from this binary's own entitlements, so no team identifier
+  /// is written in source. Nil keeps the platform's default behavior.
+  internal static var sharedKeychainGroup: String? {
+    #if os(macOS)
+      guard let task = SecTaskCreateFromSelf(nil) else { return nil }
+      var error: Unmanaged<CFError>?
+      let value = SecTaskCopyValueForEntitlement(
+        task, "keychain-access-groups" as CFString, &error)
+      let groups = value as? [String] ?? []
+      return groups.first { $0.hasSuffix(sharedKeychainGroupSuffix) }
+    #else
+      return nil
+    #endif
+  }
+
   /// The platform half of the above: iOS shares a keychain access group
   /// with its extensions and needs no second copy of the number, so it
   /// does not make one.
   @discardableResult
   internal static func publishToDriver(digits: String) -> Bool {
     #if os(macOS)
-      return OfferedAccessNumber.publish(digits: digits)
+      return CardCanOffer.publish(digits: digits)
     #else
       return false
     #endif
@@ -38,6 +58,18 @@ extension CardCredentialStore {
     ]
   }
 
+  /// The same coordinates in one shared access group.
+  ///
+  /// Only new machine-use accounts use this: existing items were
+  /// created without a group, and asking for them with one would miss.
+  internal static func query(account: String, accessGroup: String?) -> [String: Any] {
+    var coordinates = query(account: account)
+    if let accessGroup {
+      coordinates[kSecAttrAccessGroup as String] = accessGroup
+    }
+    return coordinates
+  }
+
   /// Whether an item is present, without authenticating.
   ///
   /// The lookup explicitly skips any interface. A protected item then
@@ -53,6 +85,23 @@ extension CardCredentialStore {
     query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
     let status = SecItemCopyMatching(query as CFDictionary, nil)
     return status == errSecSuccess || status == errSecInteractionNotAllowed
+  }
+
+  /// Reads a value from the shared group both binaries are entitled to.
+  internal static func readShared(account: String) -> String? {
+    if TestCredentialEnvironment.isTestMode {
+      return TestCredentialEnvironment.readCredential(account: account)
+    }
+    var query = self.query(account: account, accessGroup: sharedKeychainGroup)
+    query[kSecReturnData as String] = true
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
+    var item: CFTypeRef?
+    guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+      let data = item as? Data
+    else {
+      return nil
+    }
+    return String(data: data, encoding: .utf8)
   }
 
   /// Reads a value.
@@ -81,6 +130,28 @@ extension CardCredentialStore {
   /// a refusal here is not the holder's fault, and telling them their PIN
   /// is invalid when the store merely could not replace an item sends
   /// them looking in the wrong place.
+  /// Writes a value into the shared group both binaries are entitled to.
+  internal static func writeShared(_ digits: String, account: String) -> OSStatus {
+    guard let data = digits.data(using: .utf8) else { return errSecParam }
+    if TestCredentialEnvironment.isTestMode {
+      TestCredentialEnvironment.writeCredential(digits, account: account)
+      return errSecSuccess
+    }
+    let coordinates = query(account: account, accessGroup: sharedKeychainGroup)
+    let replacement = [kSecValueData as String: data]
+    let updated = SecItemUpdate(
+      coordinates as CFDictionary,
+      replacement as CFDictionary)
+    if updated == errSecSuccess { return updated }
+    guard updated == errSecItemNotFound else { return updated }
+
+    var insertion = coordinates
+    insertion[kSecValueData as String] = data
+    insertion[kSecAttrAccessible as String] =
+      kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    return SecItemAdd(insertion as CFDictionary, nil)
+  }
+
   internal static func write(_ digits: String, account: String) -> OSStatus {
     guard let data = digits.data(using: .utf8) else { return errSecParam }
     if TestCredentialEnvironment.isTestMode {
@@ -116,5 +187,27 @@ extension CardCredentialStore {
       return
     }
     SecItemDelete(query(account: account) as CFDictionary)
+  }
+
+  /// Whether a shared item is present, without authenticating.
+  internal static func existsShared(account: String) -> Bool {
+    if TestCredentialEnvironment.isTestMode {
+      return TestCredentialEnvironment.credentialExists(account: account)
+    }
+    var query = self.query(account: account, accessGroup: sharedKeychainGroup)
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
+    query[kSecUseAuthenticationUI as String] = kSecUseAuthenticationUISkip
+    let status = SecItemCopyMatching(query as CFDictionary, nil)
+    return status == errSecSuccess || status == errSecInteractionNotAllowed
+  }
+
+  /// Removes a shared item.
+  internal static func deleteShared(account: String) {
+    if TestCredentialEnvironment.isTestMode {
+      TestCredentialEnvironment.deleteCredential(account: account)
+      return
+    }
+    let coordinates = query(account: account, accessGroup: sharedKeychainGroup)
+    SecItemDelete(coordinates as CFDictionary)
   }
 }
