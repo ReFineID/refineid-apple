@@ -677,19 +677,19 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "As a portfolio (ASiC-E)"
+            "value" : "As a package (ASiC-E)"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Salkkuna (ASiC-E)"
+            "value" : "Pakettina (ASiC-E)"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Som portfölj (ASiC-E)"
+            "value" : "Som paket (ASiC-E)"
           }
         }
       }

@@ -64,7 +64,7 @@
     internal func prime(cardAccessNumber: String, pin1: String) async {
       guard !isRunning else { return }
       if DemoMode.shared.isActive {
-        await primeVirtualCard(pin1: pin1)
+        await primeVirtualCard(cardAccessNumber: cardAccessNumber, pin1: pin1)
         return
       }
       refresh()
@@ -104,51 +104,107 @@
     }
 
     /// Simulates only card/device effects; callers still use ``prime(pin1:)``.
-    private func primeVirtualCard(pin1: String) async {
+    ///
+    /// A hold proves the access number over PACE before anything else,
+    /// so the virtual run connects with the entered digits first and
+    /// only authenticates once the card has accepted them.
+    private func primeVirtualCard(cardAccessNumber: String, pin1: String) async {
       isRunning = true
       lastRunResult = .notRun
       failure = nil
+      refusal = nil
       defer { isRunning = false }
+      guard await connectVirtualCard(cardAccessNumber: cardAccessNumber) else { return }
+      guard routeVirtualActivation() else { return }
+      await authenticateVirtualCard(pin1: pin1)
+    }
+
+    /// Proves the entered digits against the virtual card.
+    ///
+    /// Mirrors the PACE step of a hold. False when the run ends here.
+    private func connectVirtualCard(cardAccessNumber: String) async -> Bool {
+      switch await DemoMode.shared.connectionSnapshot(cardAccessNumber: cardAccessNumber) {
+      case .connected:
+        return true
+
+      case .wrongCardAccessNumber:
+        lastRunResult = .failed
+        refusal = .wrongCardAccessNumber
+        failure = String(localized: "The Card Access Number (CAN) is incorrect.")
+        return false
+
+      case .failed:
+        lastRunResult = .failed
+        failure = String(localized: "The identity card could not be read. Try again.")
+        return false
+      }
+    }
+
+    /// Routes a factory card to activation.
+    ///
+    /// Sends no attempt on credentials the card was never given.
+    /// False when the run ends here.
+    private func routeVirtualActivation() -> Bool {
+      guard DemoMode.shared.activationNeeds.any else { return true }
+      lastRunResult = .failed
+      refusal = .activationRequired(
+        scheme: DemoMode.shared.activationScheme,
+        needs: DemoMode.shared.activationNeeds)
+      failure = String(localized: "Activate this card first, then try setup again.")
+      return false
+    }
+
+    private func authenticateVirtualCard(pin1: String) async {
       switch await DemoMode.shared.authenticate(pin1: pin1) {
       case .success:
         lastRunResult = .succeeded
 
+      case let result:
+        failVirtualAuthentication(result)
+      }
+    }
+
+    private func failVirtualAuthentication(_ result: VirtualIDCard.AuthenticationResult) {
+      lastRunResult = .failed
+      switch result {
+      case .success:
+        return
+
       case .invalidEntry:
-        lastRunResult = .failed
         failure = String(localized: "PIN 1 does not fit its digit rules.")
 
       case .blocked:
-        lastRunResult = .failed
         failure = String(localized: "PIN 1 is blocked.")
 
       case .rejected(let remaining):
-        lastRunResult = .failed
-        if let count = RetryCount(attemptsRemaining: remaining) {
-          failure = CredentialOutcomeMessage.rejection(
-            credentialName: "PIN 1",
-            remaining: count)
-        }
+        failure = virtualRetryMessage(remaining: remaining, refused: false)
 
       case .refusedLowAttempts(let remaining):
-        lastRunResult = .failed
-        if let count = RetryCount(attemptsRemaining: remaining) {
-          failure = CredentialOutcomeMessage.lowAttemptRefusal(
-            credentialName: "PIN 1",
-            remaining: count)
-        }
+        failure = virtualRetryMessage(remaining: remaining, refused: true)
 
       case .certificateUnavailable:
-        lastRunResult = .failed
         failure = String(localized: "The card certificate could not be read.")
 
       case .tokenPublicationFailed:
-        lastRunResult = .failed
         failure = String(localized: "Safari setup did not finish. Try again.")
 
       case .transportFailure:
-        lastRunResult = .failed
         failure = String(localized: "The identity card could not be read. Try again.")
       }
+    }
+
+    /// Names what a non-pristine counter leaves to spend, or nothing
+    /// when the card would not name a count.
+    private func virtualRetryMessage(remaining: UInt8, refused: Bool) -> String? {
+      guard let count = RetryCount(attemptsRemaining: remaining) else { return nil }
+      if refused {
+        return CredentialOutcomeMessage.lowAttemptRefusal(
+          credentialName: "PIN 1",
+          remaining: count)
+      }
+      return CredentialOutcomeMessage.rejection(
+        credentialName: "PIN 1",
+        remaining: count)
     }
   }
 

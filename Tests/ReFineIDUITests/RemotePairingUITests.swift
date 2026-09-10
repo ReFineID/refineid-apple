@@ -24,17 +24,35 @@
     }
 
     /// Tapping Connect opens inline pairing controls.
+    ///
+    /// The holder row is served only where a card can be reached, so the
+    /// run brings its own registered virtual identity instead of assuming
+    /// the device antenna exists.
     internal func testConnectOpensInlinePairingControls() {
-      let app = UITestApp.launch()
-      let connect = element(UITestIdentifiers.remoteCard, in: app)
+      let app = UITestApp.launchVirtualCard(scenario: "registered-nfc")
+      let row = element(UITestIdentifiers.remoteCard, in: app)
+      XCTAssertTrue(
+        row.waitForExistence(timeout: Self.appearTimeout),
+        "the remote card row did not appear")
+      let connect = element("remoteConnectButton", in: app)
       XCTAssertTrue(
         connect.waitForExistence(timeout: Self.appearTimeout),
-        "the remote card row did not appear")
+        "the remote card row offered no Connect action")
+      connect.tap()
+      XCTAssertTrue(
+        element("pairingCodeEntry", in: app)
+          .waitForExistence(timeout: Self.appearTimeout),
+        "tapping Connect did not open inline pairing controls")
     }
 
     /// Removing the pairing resets the row to its initial state.
+    ///
+    /// The pretend pairing seeds the row's state, and the virtual card
+    /// the row itself: neither the antenna nor a second device is needed.
     internal func testDisconnectResetsRowToConnectState() {
-      let app = UITestApp.launch(arguments: ["--pretend-paired"])
+      let app = UITestApp.launch(arguments: [
+        "--virtual-card", "registered-nfc", "--pretend-paired",
+      ])
       let disconnect = app.descendants(matching: .any)["remoteDisconnectButton"]
         .firstMatch
       guard disconnect.waitForExistence(timeout: Self.appearTimeout) else {

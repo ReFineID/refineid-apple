@@ -66,6 +66,7 @@ import SwiftUI
           .foregroundStyle(
             remoteCardAvailable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)
           )
+          .accessibilityIdentifier("remoteCard")
         Spacer()
         if remoteCardAvailable {
           remoteRouteTrailingControls
@@ -73,7 +74,6 @@ import SwiftUI
       }
       .buttonStyle(.borderless)
       .disabled(!remoteCardAvailable)
-      .accessibilityIdentifier("remoteCard")
       .onAppear {
         pairingModel.refresh()
         RappAutoPairingService.shared.reconcile()

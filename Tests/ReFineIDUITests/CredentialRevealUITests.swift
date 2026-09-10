@@ -35,7 +35,7 @@
       secret.typeText("1234")
 
       app.buttons["managementChangePIN1CurrentReveal"].tap()
-      let revealed = app.textFields["Current PIN 1"]
+      let revealed = app.textFields["managementChangePIN1Current"]
       XCTAssertTrue(
         revealed.waitForExistence(timeout: Self.appearTimeout),
         "revealing did not present a standard text field")
