@@ -36,6 +36,7 @@ import Foundation
     private let onEvent: @Sendable (StreamRelayEvent) -> Void
     private let queue = DispatchQueue(label: "fi.refineid.stream-relay")
     private var connection: NWConnection?
+    private var isStarted = false
     private var nextEndpointIndex = 0
     private var generation = 0
     private var isReady = false
@@ -74,8 +75,15 @@ import Foundation
 
     /// Dials the first endpoint; later endpoints are tried in order until
     /// one connects.
+    ///
+    /// Repeat calls are ignored: each one would otherwise consume the next
+    /// endpoint and strand the dial already in flight.
     public func start() {
-      queue.async { self.dialNext() }
+      queue.async {
+        guard !self.isStarted, !self.isFinished else { return }
+        self.isStarted = true
+        self.dialNext()
+      }
     }
 
     /// Sends one opaque frame to the connected listener, returning after the

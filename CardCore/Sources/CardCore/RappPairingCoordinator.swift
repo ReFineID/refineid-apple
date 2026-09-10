@@ -52,6 +52,7 @@
       public let platform: String
       /// Exact requester profile list; absent when the peer is the proxy.
       public let requestedProfiles: [String]?
+      // swiftlint:disable:previous discouraged_optional_collection
 
       // MARK: Lifecycle
 
@@ -62,16 +63,14 @@
       }
     }
 
+    /// Local endpoint role, driven during pairing and bound into the pair record.
+    public enum Role: Sendable, Equatable {
+      case requester
+      case proxy
+    }
+
     /// Non-secret metadata for a completed pairing.
     public struct PairSummary: Sendable, Equatable {
-      // MARK: Nested Types
-
-      /// Local endpoint role bound into the pair record.
-      public enum Role: Sendable, Equatable {
-        case requester
-        case proxy
-      }
-
       // MARK: Properties
 
       /// Transcript-derived pair identifier.
@@ -120,11 +119,6 @@
       case reviewPeer(Peer)
       case paired(PairSummary)
       case closed(CloseReason)
-    }
-
-    internal enum Role {
-      case requester
-      case proxy
     }
 
     internal enum State: Equatable {

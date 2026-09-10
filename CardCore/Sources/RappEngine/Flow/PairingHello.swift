@@ -18,6 +18,7 @@ internal struct PairingHello: Equatable {
   internal var platform: String
 
   internal var requestedProfiles: [ProfileName]?
+  // swiftlint:disable:previous discouraged_optional_collection
 
   internal static func from(body: [String: WireValue]) throws -> Self {
     var fields = body
@@ -25,7 +26,7 @@ internal struct PairingHello: Equatable {
       map: takeMessageMap(&fields, "parameters"))
     let decodedDisplayName = try takeMessageText(&fields, "display_name")
     let decodedPlatform = try takeMessageText(&fields, "platform")
-    var requested: [ProfileName]?
+    var requested: [ProfileName]?  // swiftlint:disable:this discouraged_optional_collection
     if let value = fields.removeValue(forKey: "requested_profiles") {
       guard case .array(let names) = value else {
         throw MessageFieldError.invalidField("requested_profiles")

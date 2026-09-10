@@ -1,6 +1,7 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
 @_spi(TokenExtension) import CardCore
+// swiftlint:disable:previous attributes
 import CryptoTokenKit
 import Foundation
 
@@ -44,8 +45,10 @@ extension TokenSession {
     do {
       let signature = try SmartCardChannel(smartCard, waits: .reader).withSession { channel in
         try QualifiedSignature.perform(
-          in: channel,
-          unsealingWith: token.sealedAccessNumber,
+          on: QualifiedSignature.ChannelAccess(
+            channel: channel,
+            accessNumber: token.sealedAccessNumber
+          ),
           enteredPin: entered,
           request: request,
           signPublicKey: signPublicKey,

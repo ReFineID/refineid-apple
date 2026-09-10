@@ -19,10 +19,15 @@ import Security
 /// The extension has no recovery UI; the containing app must explicitly
 /// establish a new trusted token before any signing can resume.
 internal enum QualifiedSignature {
+  /// The sealed channel and the access number that unseals it.
+  internal struct ChannelAccess {
+    internal let channel: SmartCardChannel
+    internal let accessNumber: CardAccessNumber?
+  }
+
   /// Unseals the channel if the card asks for it, then signs in it.
   internal static func perform(
-    in channel: SmartCardChannel,
-    unsealingWith accessNumber: CardAccessNumber?,
+    on access: ChannelAccess,
     enteredPin: String?,
     request: SignRequest,
     signPublicKey: SecKey,
@@ -30,7 +35,7 @@ internal enum QualifiedSignature {
   ) throws -> Data {
     do {
       return try performSign(
-        channel: try ReaderSignature.unsealed(channel, with: accessNumber),
+        channel: try ReaderSignature.unsealed(access.channel, with: access.accessNumber),
         enteredPin: enteredPin,
         request: request,
         signPublicKey: signPublicKey,

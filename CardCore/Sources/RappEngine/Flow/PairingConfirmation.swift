@@ -30,9 +30,13 @@ internal struct PairingConfirmation {
 
   private var peerHello: PairingHello?
 
-  private var localGrants: [ProfileName]?
+  private var localGrants: [ProfileName] = []
 
-  private var peerGrants: [ProfileName]?
+  private var localConfirmationSent = false
+
+  private var peerGrants: [ProfileName] = []
+
+  private var peerConfirmationReceived = false
 
   private var localParameters: NegotiatedParameters {
     NegotiatedParameters(
@@ -110,19 +114,20 @@ internal struct PairingConfirmation {
   /// same bytes.
   internal mutating func sendConfirmation(grantedProfiles: [ProfileName]) throws -> Data {
     guard localHelloSent, peerHello != nil else { throw PairingError.helloIncomplete }
-    guard localGrants == nil else { throw PairingError.duplicateMessage }
+    guard !localConfirmationSent else { throw PairingError.duplicateMessage }
     try validateGrants(grantedProfiles, offered: offeredProfiles)
     let sorted = sortedByNameBytes(grantedProfiles)
-    if let peerGrants, peerGrants != sorted { throw PairingError.grantMismatch }
+    if peerConfirmationReceived, peerGrants != sorted { throw PairingError.grantMismatch }
     let frame = try seal(
       .pairingConfirm, body: try body(of: PairingConfirm(grantedProfiles: sorted)))
     localGrants = sorted
+    localConfirmationSent = true
     return frame
   }
 
   /// Accept the peer's grant confirmation, which must equal the local one.
   internal mutating func receiveConfirmation(_ frame: Data) throws -> [ProfileName] {
-    guard peerGrants == nil else {
+    guard !peerConfirmationReceived else {
       print("[PairingConfirmation] duplicateMessage: peerGrants already set")
       Darwin.fflush(stdout)
       throw PairingError.duplicateMessage
@@ -159,7 +164,7 @@ internal struct PairingConfirmation {
       throw error
     }
     let sortedConfirm = sortedByNameBytes(confirm.grantedProfiles)
-    if let localGrants, localGrants != sortedConfirm {
+    if localConfirmationSent, localGrants != sortedConfirm {
       print(
         "[PairingConfirmation] grantMismatch:"
           + " localGrants=\(localGrants) confirm=\(confirm.grantedProfiles)"
@@ -168,6 +173,7 @@ internal struct PairingConfirmation {
       throw PairingError.grantMismatch
     }
     peerGrants = sortedConfirm
+    peerConfirmationReceived = true
     return sortedConfirm
   }
 
@@ -175,7 +181,9 @@ internal struct PairingConfirmation {
   /// confirmations.
   internal func intoPairRecord(createdAtMilliseconds: UInt64) throws -> PairRecord {
     guard localHelloSent, peerHello != nil else { throw PairingError.helloIncomplete }
-    guard let localGrants, let peerGrants else { throw PairingError.confirmationIncomplete }
+    guard localConfirmationSent, peerConfirmationReceived else {
+      throw PairingError.confirmationIncomplete
+    }
     guard localGrants == peerGrants else { throw PairingError.grantMismatch }
     let grantsHash: Data
     do {

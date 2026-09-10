@@ -5,6 +5,18 @@ import Foundation
 
 /// An in-progress pairing handshake over exactly one transport candidate.
 internal struct PairingHandshake {
+  // MARK: Nested Types
+
+  /// Everything one handshake attempt starts from.
+  internal struct Attempt {
+    internal let role: EndpointRole
+    internal let offer: PairingOffer
+    internal let candidateIdentifier: String
+    internal let localKeys: PairKeyMaterial
+    internal let deadline: PairingOfferDeadline
+    internal let nowMilliseconds: UInt64
+  }
+
   private let role: EndpointRole
 
   private let offer: PairingOffer
@@ -22,29 +34,24 @@ internal struct PairingHandshake {
   internal var isComplete: Bool { noise.isComplete }
 
   /// Begin one attempt against one named candidate of a live offer.
-  internal static func begin(
-    role: EndpointRole,
-    offer: PairingOffer,
-    candidateIdentifier: String,
-    localKeys: PairKeyMaterial,
-    deadline: PairingOfferDeadline,
-    nowMilliseconds: UInt64
-  ) throws -> Self {
+  internal static func begin(_ attempt: Attempt) throws -> Self {
     func fail(_ error: PairingError) -> PairingAttemptFailure {
-      PairingAttemptFailure(error: error, offer: offer)
+      PairingAttemptFailure(error: error, offer: attempt.offer)
     }
-    guard deadline.isLive(nowMilliseconds: nowMilliseconds) else {
+    guard attempt.deadline.isLive(nowMilliseconds: attempt.nowMilliseconds) else {
       throw fail(.offerExpired)
     }
-    let matches = offer.transports.filter { $0.candidateIdentifier == candidateIdentifier }
+    let matches = attempt.offer.transports.filter { candidate in
+      candidate.candidateIdentifier == attempt.candidateIdentifier
+    }
     guard matches.count == 1, let selectedCandidate = matches.first else {
       throw fail(.candidateNotUnique)
     }
     let decodedOfferedProfiles: [ProfileName]
     let decodedOfferHash: Data
     do {
-      decodedOfferedProfiles = try parseOfferedProfiles(offer.profiles)
-      decodedOfferHash = try offer.offerHash()
+      decodedOfferedProfiles = try parseOfferedProfiles(attempt.offer.profiles)
+      decodedOfferHash = try attempt.offer.offerHash()
     } catch let error as PairingError {
       throw fail(error)
     } catch let error as PairingOfferError {
@@ -56,14 +63,15 @@ internal struct PairingHandshake {
         suiteName: RappNoise.pairingSuite,
         prologue: try RappNoise.pairingPrologue(
           offerHash: decodedOfferHash, transportProfile: selectedCandidate.profile),
-        isInitiator: role == .requester,
-        localStaticPrivate: localKeys.privateKey,
+        isInitiator: attempt.role == .requester,
+        localStaticPrivate: attempt.localKeys.privateKey,
         remoteStaticPublic: nil,
-        presharedKey: offer.pairingSecret,
+        presharedKey: attempt.offer.pairingSecret,
         fixedEphemeralPrivate: Curve25519.KeyAgreement.PrivateKey().rawRepresentation)
       return Self(
-        role: role, offer: offer, offerHash: decodedOfferHash, candidate: selectedCandidate,
-        offeredProfiles: decodedOfferedProfiles, localKeys: localKeys, noise: handshakeState)
+        role: attempt.role, offer: attempt.offer, offerHash: decodedOfferHash,
+        candidate: selectedCandidate, offeredProfiles: decodedOfferedProfiles,
+        localKeys: attempt.localKeys, noise: handshakeState)
     } catch {
       throw fail(.noise)
     }

@@ -306,6 +306,7 @@ import Foundation
       finish(.startup(String(describing: error)))
     }
 
+    // swiftlint:disable discouraged_optional_collection
     /// Invites the first advertised peer found.
     public func browser(
       _: MCNearbyServiceBrowser,
@@ -316,6 +317,7 @@ import Foundation
       lastFoundPeer.withLock { $0 = peerID }
       invite(peerID)
     }
+    // swiftlint:enable discouraged_optional_collection
 
     /// Forgets a vanished peer so a stale invite is not retried.
     public func browser(_: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {

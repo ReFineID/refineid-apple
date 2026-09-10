@@ -33,6 +33,22 @@
       "count": 1
     },
     {
+      "file": "CardCore/Sources/CardCore/PersistentRelaySession.swift",
+      "command": "disable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/CardCore/PersistentRelaySession.swift",
+      "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
       "file": "CardCore/Sources/CardCore/RappPairingCoordinator+Factory.swift",
       "command": "disable:this",
       "rules": [
@@ -41,6 +57,14 @@
       "count": 2
     },
     {
+      "file": "CardCore/Sources/CardCore/RappPairingCoordinator.swift",
+      "command": "disable:previous",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
       "file": "CardCore/Sources/RappEngine/API/RappBindingError.swift",
       "command": "disable",
       "rules": [
@@ -107,6 +131,14 @@
       "count": 1
     },
     {
+      "file": "CardCore/Sources/RappEngine/API/RappOperationBridge+Lifecycle.swift",
+      "command": "disable:this",
+      "rules": [
+        "function_parameter_count"
+      ],
+      "count": 2
+    },
+    {
       "file": "CardCore/Sources/RappEngine/API/RappOperationKind.swift",
       "command": "disable",
       "rules": [
@@ -151,6 +183,14 @@
       "command": "enable",
       "rules": [
         "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/API/RappPairingBridge+Ceremony.swift",
+      "command": "disable:this",
+      "rules": [
+        "function_parameter_count"
       ],
       "count": 1
     },
@@ -215,6 +255,30 @@
     {
       "file": "CardCore/Sources/RappEngine/API/StreamProfile.swift",
       "command": "enable",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Engine/TypedMessage+WireBody.swift",
+      "command": "disable:previous",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Flow/PairingHello.swift",
+      "command": "disable:previous",
+      "rules": [
+        "discouraged_optional_collection"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Sources/RappEngine/Flow/PairingHello.swift",
+      "command": "disable:this",
       "rules": [
         "discouraged_optional_collection"
       ],
@@ -537,6 +601,14 @@
       "command": "enable",
       "rules": [
         "sorted_enum_cases"
+      ],
+      "count": 1
+    },
+    {
+      "file": "CardCore/Tests/RappEngineTests/OperationDriveTests.swift",
+      "command": "disable:this",
+      "rules": [
+        "function_parameter_count"
       ],
       "count": 1
     },
@@ -598,6 +670,14 @@
     },
     {
       "file": "Sources/RappTokenExtension/PersistentTokenDriver.swift",
+      "command": "disable:previous",
+      "rules": [
+        "attributes"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/RappTokenExtension/PersistentTokenDriver.swift",
       "command": "disable:this",
       "rules": [
         "unneeded_throws_rethrows"
@@ -629,10 +709,42 @@
       "count": 1
     },
     {
+      "file": "Sources/TokenExtension/Token+Validation.swift",
+      "command": "disable:previous",
+      "rules": [
+        "attributes"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/TokenExtension/TokenSession+Qualified.swift",
+      "command": "disable:previous",
+      "rules": [
+        "attributes"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Sources/TokenExtension/TokenSession.swift",
+      "command": "disable:previous",
+      "rules": [
+        "attributes"
+      ],
+      "count": 1
+    },
+    {
       "file": "Tests/CardCoreTests/CardSignRequestResolverTests.swift",
       "command": "disable:next",
       "rules": [
         "attributes"
+      ],
+      "count": 1
+    },
+    {
+      "file": "Tests/CardCoreTests/RappIntegrationFixtures.swift",
+      "command": "disable:previous",
+      "rules": [
+        "no_magic_numbers"
       ],
       "count": 1
     }

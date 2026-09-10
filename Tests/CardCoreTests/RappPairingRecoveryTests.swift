@@ -24,11 +24,10 @@ import XCTest
       }
     }
 
-    internal func testRequesterReusesOfferWithFreshTransportAfterHandshakeGarbage() async throws {
-      let initialOffer = expectation(description: "initial offer")
-      let restoredOffer = expectation(description: "restored offer")
-      let firstTransport = RecordingTransport()
-      let coordinator = try RappPairingCoordinator.requester(
+    private func makeRequester(
+      transport: RecordingTransport
+    ) throws -> RappPairingCoordinator {
+      try RappPairingCoordinator.requester(
         profiles: ["fi.refineid.authentication.v1"],
         candidates: [
           .init(
@@ -42,8 +41,15 @@ import XCTest
         displayName: "Requester",
         platform: "macOS",
         vault: RappDeviceVault(accessGroup: nil),
-        transport: firstTransport
+        transport: transport
       )
+    }
+
+    internal func testRequesterReusesOfferWithFreshTransportAfterHandshakeGarbage() async throws {
+      let initialOffer = expectation(description: "initial offer")
+      let restoredOffer = expectation(description: "restored offer")
+      let firstTransport = RecordingTransport()
+      let coordinator = try makeRequester(transport: firstTransport)
       let events = coordinator.events
       let collector = Task { () -> (String, String)? in
         var published: String?

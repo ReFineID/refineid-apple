@@ -14,9 +14,9 @@ internal final class CardManagementModel: ObservableObject {
   )
   @Published internal private(set) var activationScheme: ActivationScheme?
   @Published internal private(set) var offersActivation = false
-  @Published internal private(set) var working = false
-  @Published internal private(set) var failure: String?
-  @Published internal private(set) var notice: String?
+  @Published internal var working = false
+  @Published internal var failure: String?
+  @Published internal var notice: String?
 
   private let activationRequired: Bool
   private var nextRefreshIdentifier = 0
@@ -57,7 +57,7 @@ internal final class CardManagementModel: ObservableObject {
     transport == .nearField ? cardAccessNumber : nil
   }
 
-  private var unreadableCardMessage: String {
+  internal var unreadableCardMessage: String {
     transport == .nearField
       ? "The card could not be read over NFC. Check its card access number and try again."
       : "No readable card. Connect a reader and insert the card."
@@ -144,7 +144,7 @@ internal final class CardManagementModel: ObservableObject {
       failure = unreadableCardMessage
       return
     }
-    apply(result)
+    apply(result, preservingOutcome: false)
   }
 
   /// Removes feedback that belongs to the previously selected operation.
@@ -233,9 +233,9 @@ internal final class CardManagementModel: ObservableObject {
     return !execution.remaining.any
   }
 
-  private func apply(
+  internal func apply(
     _ snapshot: CardMaintenance.Snapshot,
-    preservingOutcome: Bool = false
+    preservingOutcome: Bool
   ) {
     report = snapshot.report
     activationScheme = snapshot.activationScheme
@@ -257,126 +257,4 @@ internal final class CardManagementModel: ObservableObject {
     }
   }
 
-  private func describe(_ activation: CardMaintenance.ActivationReport) -> Bool {
-    let entry = activationEntryName(activation.scheme)
-    switch (activation.pin1, activation.pin2) {
-    case (.success, .success):
-      notice = "Card activated: PIN 1 and PIN 2 are set"
-      return true
-
-    case (.alreadyActivated, .success):
-      notice = "Card activated: PIN 2 is set; PIN 1 already was"
-      return true
-
-    case (.success, .alreadyActivated), (.success, nil):
-      notice = "Card activated: PIN 1 is set; PIN 2 already was"
-      return true
-
-    case (.success, .some(let second)):
-      failure = message(for: second, presenting: entry)
-        .map { "PIN 1 was set, but PIN 2 was not: \($0)" }
-      return false
-
-    case (.alreadyActivated, .some(let second)):
-      failure = message(for: second, presenting: entry)
-        .map { "PIN 2 was not set: \($0)" }
-      return false
-
-    case (.alreadyActivated, nil):
-      failure = "This card is already activated."
-      return false
-
-    case (let first, _):
-      failure = message(for: first, presenting: entry)
-      return false
-    }
-  }
-
-  private func activationEntryName(_ scheme: ActivationScheme) -> String {
-    switch scheme {
-    case .activationCodeIsPuk:
-      "activation code"
-
-    case .presetActivationPin:
-      "activation PIN"
-    }
-  }
-
-  private func perform(
-    presenting: String,
-    accepted: String,
-    _ operation: () async -> CardMaintenance.MutationReport
-  ) async -> Bool {
-    guard beginCardOperation() else { return false }
-    working = true
-    failure = nil
-    notice = nil
-    let mutation = await operation()
-    working = false
-    if mutation.outcome == .success {
-      notice = accepted
-    } else {
-      failure = message(for: mutation.outcome, presenting: presenting)
-    }
-    if let snapshot = mutation.snapshot {
-      apply(snapshot, preservingOutcome: true)
-    }
-    return mutation.outcome == .success
-  }
-
-  /// Starts a mutating card operation or explains why it could not start.
-  ///
-  /// Buttons mirror these conditions, but confirmation is asynchronous: card
-  /// removal or an event-driven refresh can happen while the system alert is
-  /// visible. A confirmed operation must never disappear as a silent no-op.
-  private func beginCardOperation() -> Bool {
-    if cardOperationInProgress {
-      failure = "Another card operation is still in progress. Try again."
-      return false
-    }
-    guard canContactCard else {
-      failure = unreadableCardMessage
-      return false
-    }
-    return true
-  }
-
-  private func message(
-    for outcome: CardMaintenance.Outcome,
-    presenting: String
-  ) -> String? {
-    switch outcome {
-    case .success:
-      nil
-
-    case .invalidEntry:
-      "The entry does not fit the credential's digit rules."
-
-    case .noCard:
-      unreadableCardMessage
-
-    case .floorRefused(.refuseBlocked), .pinBlocked:
-      "\(presenting) is blocked."
-
-    case .floorRefused(.refuseLowAttempts):
-      CredentialOutcomeMessage.lowAttemptRefusal()
-
-    case .floorRefused:
-      "The \(presenting) retry counter could not be read; nothing was sent."
-
-    case .rejected(let remaining):
-      CredentialOutcomeMessage.rejection(
-        credentialName: presenting,
-        remaining: remaining)
-
-    case .invalidated:
-      "The credential slot is invalidated; only the issuer can recover it."
-
-    case .alreadyActivated:
-      "This card looks activated already."
-
-    case .failed:
-      "The card operation did not complete."
-    }
-  }
 }

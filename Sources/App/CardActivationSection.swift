@@ -9,15 +9,6 @@ import SwiftUI
 /// The driver classifies the card and refuses a wrong-length code
 /// before anything is spent.
 internal struct CardActivationSection: View {
-  /// The keyboard path through the section.
-  private enum Field {
-    case entry
-    case pin1
-    case pin1Repeat
-    case pin2
-    case pin2Repeat
-  }
-
   internal let model: CardManagementModel
   internal let onActivated: () -> Void
 
@@ -28,16 +19,6 @@ internal struct CardActivationSection: View {
   @State private var newPin2Repeated = ""
   @State private var pending: CredentialOperationConfirmation.Operation?
   @FocusState private var focus: Field?
-
-  /// Whether the form asks for PIN 1 because the card still waits for it.
-  private var asksPin1: Bool {
-    model.activationNeeds.pin1
-  }
-
-  /// Whether the form asks for PIN 2 because the card still waits for it.
-  private var asksPin2: Bool {
-    model.activationNeeds.pin2
-  }
 
   private var activationEntryIsValid: Bool {
     guard let scheme = model.activationScheme else { return false }
@@ -254,13 +235,6 @@ internal struct CardActivationSection: View {
         }
       )
     }
-  }
-
-  /// The fields on screen, in the order Return walks them.
-  private var shownFields: [Field] {
-    [.entry]
-      + (asksPin1 ? [.pin1, .pin1Repeat] : [])
-      + (asksPin2 ? [.pin2, .pin2Repeat] : [])
   }
 
   /// Return advances through the fields that are shown; on the last

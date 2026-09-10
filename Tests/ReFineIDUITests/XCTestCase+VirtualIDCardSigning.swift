@@ -6,6 +6,10 @@
 
   /// Virtual card signing journeys through the visible GUI.
   extension XCTestCase {
+    internal enum SigningCardSetup {
+      internal static let defaultPIN2Attempts = 5
+    }
+
     @MainActor
     internal func assertSigningLocalization(
       language: String,
@@ -34,10 +38,55 @@
     }
 
     @MainActor
+    internal func signingApp() -> XCUIApplication {
+      signingApp(
+        pin2Attempts: SigningCardSetup.defaultPIN2Attempts,
+        signatureCertificate: nil,
+        fault: nil
+      )
+    }
+
+    @MainActor
+    internal func signingApp(pin2Attempts: Int) -> XCUIApplication {
+      signingApp(
+        pin2Attempts: pin2Attempts,
+        signatureCertificate: nil,
+        fault: nil
+      )
+    }
+
+    @MainActor
+    internal func signingApp(signatureCertificate: String?) -> XCUIApplication {
+      signingApp(
+        pin2Attempts: SigningCardSetup.defaultPIN2Attempts,
+        signatureCertificate: signatureCertificate,
+        fault: nil
+      )
+    }
+
+    @MainActor
+    internal func signingApp(fault: String?) -> XCUIApplication {
+      signingApp(
+        pin2Attempts: SigningCardSetup.defaultPIN2Attempts,
+        signatureCertificate: nil,
+        fault: fault
+      )
+    }
+
+    @MainActor
+    internal func signingApp(pin2Attempts: Int, fault: String?) -> XCUIApplication {
+      signingApp(
+        pin2Attempts: pin2Attempts,
+        signatureCertificate: nil,
+        fault: fault
+      )
+    }
+
+    @MainActor
     internal func signingApp(
-      pin2Attempts: Int = 5,
-      signatureCertificate: String? = nil,
-      fault: String? = nil
+      pin2Attempts: Int,
+      signatureCertificate: String?,
+      fault: String?
     ) -> XCUIApplication {
       let app = UITestApp.launchVirtualCard()
       configureSigningCard(
@@ -50,11 +99,21 @@
     }
 
     @MainActor
+    internal func configureSigningCard(in app: XCUIApplication) {
+      configureSigningCard(
+        in: app,
+        pin2Attempts: SigningCardSetup.defaultPIN2Attempts,
+        signatureCertificate: nil,
+        fault: nil
+      )
+    }
+
+    @MainActor
     internal func configureSigningCard(
       in app: XCUIApplication,
-      pin2Attempts: Int = 5,
-      signatureCertificate: String? = nil,
-      fault: String? = nil
+      pin2Attempts: Int,
+      signatureCertificate: String?,
+      fault: String?
     ) {
       openEditor(in: app)
       selectMenu(
@@ -63,11 +122,13 @@
         in: app,
         optionIdentifier: "virtualCardScenarioOption.activated-reader")
 
-      if pin2Attempts != 5 {
+      if pin2Attempts != SigningCardSetup.defaultPIN2Attempts {
         let stepper = app.steppers[UITestIdentifiers.virtualCardPIN2Attempts]
         scrollTo(stepper, in: app)
         XCTAssertTrue(stepper.waitForExistence(timeout: UITestApp.appearTimeout))
-        for _ in pin2Attempts..<5 { stepper.buttons.firstMatch.tap() }
+        for _ in pin2Attempts..<SigningCardSetup.defaultPIN2Attempts {
+          stepper.buttons.firstMatch.tap()
+        }
       }
 
       if let signatureCertificate {

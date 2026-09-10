@@ -11,6 +11,8 @@ import Testing
   internal enum RappIntegrationFixtures {
     // MARK: Nested Types
 
+    internal typealias FrameReceiver = @Sendable (Data) async -> Void
+
     internal struct ProxyProgress: Equatable {
       internal var prerequisites = 0
       internal var approvals = 0
@@ -80,6 +82,22 @@ import Testing
       case unexpectedTransportError
     }
 
+    internal enum FixtureTiming {
+      internal static let operationExpiryMilliseconds: UInt64 = 60_000
+      internal static let pairingOfferLifetimeMilliseconds: UInt64 = 60_000
+      internal static let connectionMaximumLifetimeMilliseconds: UInt64 = 60_000
+      /// Empty CBOR map: the pairing parameters the fixture never fills in.
+      internal static let emptyParametersCBOR = Data([0xA0])
+      // swiftlint:disable:previous no_magic_numbers
+      internal static let probingBaseIntervalMilliseconds: UInt64 = 60_000
+      internal static let probingResponseTimeoutMilliseconds: UInt64 = 10_000
+      internal static let probingMaximumIntervalMilliseconds: UInt64 = 60_000
+      internal static let toleratedMisses: UInt8 = 3
+      internal static let interactiveBaseIntervalMilliseconds: UInt64 = 5_000
+      internal static let interactiveResponseTimeoutMilliseconds: UInt64 = 3_000
+      internal static let interactiveMaximumJitterMilliseconds: UInt64 = 500
+    }
+
     internal struct PairingFixture {
       internal let requesterVault: RappDeviceVault
       internal let proxyVault: RappDeviceVault
@@ -147,7 +165,7 @@ import Testing
             keyProfile: .ecdsaP256,
             algorithm: .ecdsaSHA256,
             digest: digest,
-            expiresAfterMilliseconds: 60_000
+            expiresAfterMilliseconds: FixtureTiming.operationExpiryMilliseconds
           )
 
         case .documentSigning(let documentName, let digest):
@@ -156,7 +174,7 @@ import Testing
             keyProfile: .ecdsaP256,
             algorithm: .ecdsaSHA256,
             digest: digest,
-            expiresAfterMilliseconds: 60_000
+            expiresAfterMilliseconds: FixtureTiming.operationExpiryMilliseconds
           )
         }
       }
@@ -171,19 +189,15 @@ import Testing
     }
 
     internal actor FrameEndpoint {
-      // MARK: Nested Types
-
-      internal typealias Receiver = @Sendable (Data) async -> Void
-
       // MARK: Properties
 
-      private var receiver: Receiver?
+      private var receiver: FrameReceiver?
       private var frames: [Data] = []
       private var closeCount = 0
 
       // MARK: Functions
 
-      internal func install(_ receiver: @escaping Receiver) {
+      internal func install(_ receiver: @escaping FrameReceiver) {
         self.receiver = receiver
       }
 
@@ -244,11 +258,11 @@ import Testing
     internal static let transportProfile = "apple-peer-v1"
     internal static let candidateID = "apple-peer-v1.nearby"
     internal static let liveness = RappOperationDriver.Liveness(
-      baseIntervalMilliseconds: 60_000,
-      responseTimeoutMilliseconds: 10_000,
-      maximumIntervalMilliseconds: 60_000,
+      baseIntervalMilliseconds: FixtureTiming.probingBaseIntervalMilliseconds,
+      responseTimeoutMilliseconds: FixtureTiming.probingResponseTimeoutMilliseconds,
+      maximumIntervalMilliseconds: FixtureTiming.probingMaximumIntervalMilliseconds,
       maximumJitterMilliseconds: 0,
-      maximumMisses: 3
+      maximumMisses: FixtureTiming.toleratedMisses
     )
 
     /// What the shipped requester actually runs with.
@@ -260,11 +274,11 @@ import Testing
     /// operation is executing -- the one arrangement the fast fixture
     /// could not produce.
     internal static let interactiveLiveness = RappOperationDriver.Liveness(
-      baseIntervalMilliseconds: 5_000,
-      responseTimeoutMilliseconds: 3_000,
-      maximumIntervalMilliseconds: 60_000,
-      maximumJitterMilliseconds: 500,
-      maximumMisses: 3
+      baseIntervalMilliseconds: FixtureTiming.interactiveBaseIntervalMilliseconds,
+      responseTimeoutMilliseconds: FixtureTiming.interactiveResponseTimeoutMilliseconds,
+      maximumIntervalMilliseconds: FixtureTiming.probingMaximumIntervalMilliseconds,
+      maximumJitterMilliseconds: FixtureTiming.interactiveMaximumJitterMilliseconds,
+      maximumMisses: FixtureTiming.toleratedMisses
     )
   }
 #endif

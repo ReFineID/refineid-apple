@@ -100,32 +100,61 @@ extension RappOperationBridge {
     }
   }
 
-  /// The caller's next step for one proxy dispatch.
-  internal func action(for dispatch: ProxyDispatch) throws -> RappBridgeAction {
+  /// Releases one failure result, closing the session when it is the last
+  /// frame the session carries.
+  private func sendFailureAction(
+    message: TypedMessage, closeSession: Bool
+  ) throws -> RappBridgeAction {
+    let frame = try sealedMessage(message)
+    let revokes = Self.failureRevokesPairing(message)
+    if closeSession {
+      // The failure result is the last frame this session carries; no
+      // later inbound frame may admit new work (invariant INV-16), and
+      // whatever else is still in flight is classified now.
+      classifyLiveOperations()
+      closed = true
+      session.close()
+    }
+    return RappBridgeAction(
+      kind: .sendFrame,
+      operationId: message.referencedOperationIdentifier,
+      frame: frame,
+      closeSessionAfterSend: closeSession,
+      revokesPairing: revokes)
+  }
+
+  /// Releases one outbound message on the authenticated session.
+  private func sendAction(message: TypedMessage) throws -> RappBridgeAction {
+    RappBridgeAction(
+      kind: .sendFrame,
+      operationId: message.referencedOperationIdentifier,
+      frame: try sealedMessage(message))
+  }
+
+  /// One session-level frame action, or nil for operation steps.
+  private func sessionFrameAction(for dispatch: ProxyDispatch) throws -> RappBridgeAction? {
     switch dispatch {
     case .send(let message):
-      return RappBridgeAction(
-        kind: .sendFrame,
-        operationId: message.referencedOperationIdentifier,
-        frame: try sealedMessage(message))
+      return try sendAction(message: message)
 
     case .sendFailure(let message, let closeSession):
-      let frame = try sealedMessage(message)
-      let revokes = Self.failureRevokesPairing(message)
-      if closeSession {
-        // The failure result is the last frame this session carries; no
-        // later inbound frame may admit new work (invariant INV-16), and
-        // whatever else is still in flight is classified now.
-        classifyLiveOperations()
-        closed = true
-        session.close()
-      }
-      return RappBridgeAction(
-        kind: .sendFrame,
-        operationId: message.referencedOperationIdentifier,
-        frame: frame,
-        closeSessionAfterSend: closeSession,
-        revokesPairing: revokes)
+      return try sendFailureAction(message: message, closeSession: closeSession)
+
+    case .ignoredStale(let operationIdentifier, let response):
+      return try staleAction(operationIdentifier: operationIdentifier, response: response)
+
+    case .notOperation:
+      return RappBridgeAction(kind: .noAction)
+
+    default:
+      return nil
+    }
+  }
+
+  /// The caller's next step for one proxy dispatch.
+  internal func action(for dispatch: ProxyDispatch) throws -> RappBridgeAction {
+    if let frame = try sessionFrameAction(for: dispatch) { return frame }
+    switch dispatch {
 
     case .inspectPrerequisites(let operationIdentifier):
       return try operationAction(.inspectPrerequisites, operationIdentifier: operationIdentifier)
@@ -151,29 +180,40 @@ extension RappOperationBridge {
     case .ignoredDuplicateCommit(let operationIdentifier):
       return RappBridgeAction(kind: .ignoredDuplicate, operationId: operationIdentifier)
 
-    case .ignoredStale(let operationIdentifier, let response):
-      return RappBridgeAction(
-        kind: .sendFrame, operationId: operationIdentifier,
-        frame: try sealedMessage(response))
-
-    case .notOperation:
-      return RappBridgeAction(kind: .noAction)
+    default:
+      throw RappBindingError.WrongPhase
     }
+  }
+
+  /// Answers one stale reference and changes nothing.
+  private func staleAction(
+    operationIdentifier: Data, response: TypedMessage
+  ) throws -> RappBridgeAction {
+    RappBridgeAction(
+      kind: .sendFrame, operationId: operationIdentifier,
+      frame: try sealedMessage(response))
+  }
+
+  /// Commits one prepared operation and releases its first frame.
+  private func preparedAction(
+    operationIdentifier: Data
+  ) throws -> RappBridgeAction {
+    guard case .requester(var engine) = side else { throw RappBindingError.WrongPhase }
+    defer { side = .requester(engine) }
+    var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
+    let message = try mapping {
+      try engine.commit(operationIdentifier: operationIdentifier, store: &store)
+    }
+    return RappBridgeAction(
+      kind: .sendFrame, operationId: operationIdentifier,
+      frame: try sealedMessage(message))
   }
 
   /// The caller's next step for one requester dispatch.
   internal func action(for dispatch: RequesterDispatch) throws -> RappBridgeAction {
     switch dispatch {
     case .prepared(let operationIdentifier):
-      guard case .requester(var engine) = side else { throw RappBindingError.WrongPhase }
-      defer { side = .requester(engine) }
-      var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
-      let message = try mapping {
-        try engine.commit(operationIdentifier: operationIdentifier, store: &store)
-      }
-      return RappBridgeAction(
-        kind: .sendFrame, operationId: operationIdentifier,
-        frame: try sealedMessage(message))
+      return try preparedAction(operationIdentifier: operationIdentifier)
 
     case .sendResultAcknowledgement(let operationIdentifier, let message):
       return RappBridgeAction(
@@ -208,9 +248,7 @@ extension RappOperationBridge {
       return RappBridgeAction(kind: .noAction, operationId: operationIdentifier)
 
     case .ignoredStale(let operationIdentifier, let response):
-      return RappBridgeAction(
-        kind: .sendFrame, operationId: operationIdentifier,
-        frame: try sealedMessage(response))
+      return try staleAction(operationIdentifier: operationIdentifier, response: response)
 
     case .notOperation:
       return RappBridgeAction(kind: .noAction)
