@@ -8,6 +8,9 @@
   internal struct RemotePairingPromptView: View {
     private enum Layout {
       static let retryDelayNanoseconds: UInt64 = 1_000_000_000
+      /// The invitation wraps past this width instead of stretching
+      /// the content-sized window to fit one long line.
+      static let promptMaxWidth: CGFloat = 600
     }
 
     @StateObject private var model = RappPairingModel()
@@ -17,6 +20,7 @@
     internal var body: some View {
       Section {
         promptText
+          .frame(maxWidth: Layout.promptMaxWidth, alignment: .leading)
       }
       .onAppear {
         ensureOffer()
