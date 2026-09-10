@@ -11,6 +11,13 @@ import XCTest
 /// device nobody is watching.
 @MainActor
 internal enum UITestApp {
+  /// How long a control may take to appear before the run fails it.
+  ///
+  /// Card journeys wait on the antenna, the reader and the network, so
+  /// every visibility assertion below shares this one bound instead of
+  /// each helper inventing its own idea of "too long".
+  internal static let appearTimeout: TimeInterval = 10
+
   /// Launches the app under test in a stated language.
   ///
   /// The language is pinned rather than inherited. A run on a Mac set

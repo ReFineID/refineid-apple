@@ -7,7 +7,7 @@ internal enum SignedDocumentName {
   nonisolated internal static func suggested(
     sourceNames: [String],
     format: SignatureFormat,
-    at instant: Date = Date()
+    at instant: Date
   ) -> String {
     let stem: String
     if sourceNames.count == 1, let name = sourceNames.first {

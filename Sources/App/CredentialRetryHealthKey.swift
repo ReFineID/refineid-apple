@@ -73,8 +73,8 @@ internal struct CredentialRetryHealthKey: View {
 
   internal init(
     level: CredentialRetryHealth.Level?,
-    systemName: String = "key",
-    routeAvailable: Bool = true
+    systemName: String,
+    routeAvailable: Bool
   ) {
     self.level = level
     self.systemName = systemName

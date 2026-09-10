@@ -102,7 +102,7 @@ internal final class RappNoiseAndEnvelopeCorpusTests: XCTestCase {
     for vector in corpus.rejectedEnvelope {
       let encoded = decodeHex(vector.canonicalCBORHex)
       var decoder = RappNoiseAndEnvelopeCorpusSupport.BoundedCBORDecoder(data: encoded)
-      let value = try decoder.decode()
+      let value = try decoder.decode(depth: 0)
       XCTAssertTrue(decoder.isAtEnd, "Trailing bytes in \(vector.name)")
       XCTAssertEqual(
         RappNoiseAndEnvelopeCorpusSupport.validateEnvelope(

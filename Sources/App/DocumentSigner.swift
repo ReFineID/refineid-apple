@@ -45,6 +45,18 @@ internal enum DocumentSigner {
     internal let signerCertificate: Data
   }
 
+  /// How one signing operation reaches the card and authorizes it.
+  internal struct SigningAccess {
+    /// The authorizing PIN2, when the surface collected one.
+    internal let pin2: String?
+
+    /// The route the card session takes.
+    internal let transport: CardMaintenance.Transport
+
+    /// The card access number, when the route needs one.
+    internal let cardAccessNumber: String?
+  }
+
   /// What one card session produced.
   internal struct CardMaterial {
     /// The prepared document and its reserved hole.
@@ -70,20 +82,16 @@ internal enum DocumentSigner {
   /// Signs `document`, answering the finished bytes.
   internal static func sign(
     _ document: Data,
-    pin2: String?,
     reason: String?,
     location: String?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
+    access: SigningAccess
   ) async throws -> Product {
     try await Self.sign(
       document,
-      pin2: pin2,
       reason: reason,
       location: location,
       stamp: nil,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
+      access: access
     )
   }
 
@@ -95,42 +103,34 @@ internal enum DocumentSigner {
   /// signing.
   internal static func sign(
     _ document: Data,
-    pin2: String?,
     reason: String?,
     location: String?,
     stamp: VisibleStamp?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
+    access: SigningAccess
   ) async throws -> Product {
     let claim = PdfIncrementalSigner.SignatureClaim(
       signedAt: Date(), reason: reason, location: location
     )
     return try await Self.sign(
       document,
-      pin2: pin2,
       claim: claim,
       stamp: stamp,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
+      access: access
     )
   }
 
   /// The same operation with one instant shared by the QR and PDF.
   internal static func sign(
     _ document: Data,
-    pin2: String?,
     claim: PdfIncrementalSigner.SignatureClaim,
     stamp: VisibleStamp?,
-    transport: CardMaintenance.Transport = .reader,
-    cardAccessNumber: String? = nil
+    access: SigningAccess
   ) async throws -> Product {
     let material = try await Self.cardMaterial(
-      pin2: pin2,
       document: document,
       claim: claim,
       stamp: stamp,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
+      access: access
     )
     let verifiedTokens = try await Self.timestamped(material.signature)
     let timestamped = try TimestampedSignature.verified(
@@ -183,7 +183,9 @@ internal enum DocumentSigner {
   ) async throws -> Data {
     let answer = await CardMaintenance.qualifiedSignature(
       pin2: pin2,
-      expectedCertificate: expectedCertificate
+      expectedCertificate: expectedCertificate,
+      transport: .reader,
+      cardAccessNumber: nil
     ) { _ in
       claim.bytes
     }
@@ -206,12 +208,10 @@ internal enum DocumentSigner {
   /// Reads the qualified certificate, verifies PIN2 and signs, in
   /// one exclusive card session.
   private static func cardMaterial(
-    pin2: String?,
     document: Data,
     claim: PdfIncrementalSigner.SignatureClaim,
     stamp: VisibleStamp?,
-    transport: CardMaintenance.Transport,
-    cardAccessNumber: String?
+    access: SigningAccess
   ) async throws -> CardMaterial {
     let prepared: PdfSignaturePlaceholder
     let stampMark = stamp?.mark ?? PdfStampRenderer.stampMark()
@@ -230,14 +230,14 @@ internal enum DocumentSigner {
         expectedCertificate: stamp?.signerCertificate
       )
     }
-    guard let pin2 else {
+    guard let pin2 = access.pin2 else {
       throw Failure.card(.invalidEntry)
     }
     let answer = await CardMaintenance.qualifiedSignature(
       pin2: pin2,
       expectedCertificate: stamp?.signerCertificate,
-      transport: transport,
-      cardAccessNumber: cardAccessNumber
+      transport: access.transport,
+      cardAccessNumber: access.cardAccessNumber
     ) { certificate in
       QualifiedDocumentCms.signedAttributes(
         byteRangeDigest: digest, signerCertificate: certificate

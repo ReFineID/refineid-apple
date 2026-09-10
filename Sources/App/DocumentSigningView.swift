@@ -10,15 +10,11 @@
   /// Multi-document qualified signing over a reader or Core NFC session.
   @MainActor
   internal struct DocumentSigningView: View {
-    private enum Layout {
-      static let fileNameLines = 2
-    }
-
-    private struct Input {
-      let inputID = UUID()
-      let name: String
-      let data: Data
-      let isPDF: Bool
+    internal struct Input {
+      internal let inputID = UUID()
+      internal let name: String
+      internal let data: Data
+      internal let isPDF: Bool
     }
 
     private struct ExportDocument: FileDocument {
@@ -62,18 +58,19 @@
 
     internal var body: some View {
       Form {
-        documentSection
-        if !inputs.isEmpty {
-          formatSection
-          credentialSection
-          actionSection
-        }
-        if let message {
-          Section {
-            CredentialOutcomeText(message: message, tone: messageTone)
-              .accessibilityIdentifier("signingMessage")
-          }
-        }
+        DocumentSigningSections(
+          inputs: $inputs,
+          format: $format,
+          pin2: $pin2,
+          importsDocuments: $importsDocuments,
+          isSigning: isSigning,
+          canSign: canSign,
+          pin2IsValid: pin2IsValid,
+          requiresRequesterPIN2: requiresRequesterPIN2,
+          message: message,
+          messageTone: messageTone,
+          onCommit: { Task { await sign() } }
+        )
       }
       .navigationTitle(text("signing.title", "Sign documents"))
       .navigationBarTitleDisplayMode(.inline)
@@ -101,113 +98,6 @@
       .onAppear { seedVirtualRequestIfNeeded() }
       .onValueChange(of: DemoMode.shared.revision) { _ in
         seedVirtualRequestIfNeeded()
-      }
-    }
-
-    private var documentSection: some View {
-      Section(text("signing.section", "Documents")) {
-        ForEach(inputs, id: \.inputID) { input in
-          HStack {
-            Image(systemName: input.isPDF ? "doc.richtext" : "doc")
-            Text(input.name).lineLimit(Layout.fileNameLines)
-            Spacer()
-            Button(role: .destructive) {
-              inputs.removeAll { $0.inputID == input.inputID }
-              normalizeFormat()
-            } label: {
-              Image(systemName: "minus.circle.fill")
-            }
-            .accessibilityLabel(
-              text("signing.remove", "Remove document"))
-          }
-        }
-        Button {
-          importsDocuments = true
-        } label: {
-          Label(
-            inputs.isEmpty
-              ? text("signing.choose", "Choose documents")
-              : text("signing.add", "Add documents"),
-            systemImage: "doc.badge.plus")
-        }
-        .accessibilityIdentifier("signingChooseDocuments")
-      }
-    }
-
-    @ViewBuilder private var formatSection: some View {
-      if inputs.count == 1, inputs.first?.isPDF == true {
-        Section(text("signing.format", "Signing method")) {
-          Picker(selection: $format) {
-            Text(text("format.pades", "Separately (PDF)"))
-              .tag(SignatureFormat.pades)
-            Text(text("format.asice", "As a package (ASiC-E)"))
-              .tag(SignatureFormat.asice)
-          } label: {
-            EmptyView()
-          }
-          .labelsHidden()
-          .pickerStyle(.inline)
-        }
-      }
-    }
-
-    @ViewBuilder private var credentialSection: some View {
-      if requiresRequesterPIN2 {
-        Section(text("signing.authorization", "Signature authorization")) {
-          CredentialSecretField(
-            name: text("signing.pin2", "Signature (PIN 2)"),
-            text: $pin2,
-            revealIdentifier: "signingPIN2Reveal",
-            field: {
-              SecureField(
-                text("signing.pin2", "Signature (PIN 2)"),
-                text: $pin2
-              )
-              .keyboardType(.numberPad)
-              .textContentType(.oneTimeCode)
-              .accessibilityIdentifier("signingPIN2")
-              .onValueChange(of: pin2) { value in
-                pin2 = String(
-                  value.filter(\.isNumber).prefix(Pin2.maximumDigitCount))
-              }
-            },
-            validation: {
-              if !pin2.isEmpty {
-                Image(
-                  systemName: pin2IsValid
-                    ? "checkmark.circle.fill"
-                    : "xmark.circle.fill"
-                )
-                .foregroundStyle(pin2IsValid ? .green : .red)
-                .accessibilityHidden(true)
-              }
-            }
-          )
-        }
-      }
-    }
-
-    private var actionSection: some View {
-      Section {
-        Button {
-          Task { await sign() }
-        } label: {
-          HStack {
-            Spacer()
-            if isSigning { ProgressView() }
-            Text(
-              isSigning
-                ? text("signing.progress", "Signing")
-                : inputs.count == 1
-                  ? text("signing.commitOne", "Sign document")
-                  : text("signing.commit", "Sign documents")
-            )
-            .bold()
-            Spacer()
-          }
-        }
-        .disabled(!canSign)
-        .accessibilityIdentifier("signingCommit")
       }
     }
 
@@ -241,19 +131,13 @@
               isPDF: isPDF))
         }
         inputs.append(contentsOf: imported)
-        normalizeFormat()
+        format = DocumentSigningSections.normalizedFormat(format, for: inputs)
         message = nil
       } catch {
         showFailure(
           text(
             "error.import",
             "The selected documents could not be read."))
-      }
-    }
-
-    private func normalizeFormat() {
-      if inputs.count != 1 || inputs.first?.isPDF != true {
-        format = .asice
       }
     }
 
@@ -275,15 +159,18 @@
         if format == .pades, let input = inputs.first {
           let product = try await DocumentSigner.sign(
             input.data,
-            pin2: enteredPIN2,
             reason: nil,
             location: nil,
-            transport: transport,
-            cardAccessNumber: cardAccessNumber)
+            access: DocumentSigner.SigningAccess(
+              pin2: enteredPIN2,
+              transport: transport,
+              cardAccessNumber: cardAccessNumber
+            )
+          )
           data = product.bytes
         } else {
-          let objects = inputs.map {
-            AsicSigner.dataObject($0.data, named: $0.name)
+          let objects = inputs.map { input in
+            AsicSigner.dataObject(input.data, named: input.name)
           }
           data = try await AsicSigner.sign(
             objects,
@@ -295,7 +182,8 @@
           document: ExportDocument(data: data),
           name: SignedDocumentName.suggested(
             sourceNames: inputs.map(\.name),
-            format: format),
+            format: format,
+            at: Date()),
           contentType: format == .pades
             ? .pdf
             : (UTType(filenameExtension: "asice") ?? .zip))

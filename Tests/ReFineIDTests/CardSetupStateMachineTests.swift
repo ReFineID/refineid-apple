@@ -51,8 +51,8 @@ internal final class CardSetupStateMachineTests: XCTestCase {
 
   internal func testEveryStateEventPairMatchesGrammarTransitionOrRejection() throws {
     let grammar = try loadGrammar()
-    let transitions = Dictionary(grouping: grammar.transitions) {
-      StateEvent(state: $0.source, event: $0.event)
+    let transitions = Dictionary(grouping: grammar.transitions) { transition in
+      StateEvent(state: transition.source, event: transition.event)
     }
 
     for state in CardSetupStateMachine.State.allCases {

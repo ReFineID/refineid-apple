@@ -52,6 +52,13 @@
         "Set TEST_RUNNER_\(UITestEnvironment.realCardTestsVariable)=1 to run physical-card tests")
     }
 
+    override internal func tearDownWithError() throws {
+      MainActor.assumeIsolated {
+        XCUIApplication().terminate()
+      }
+      try super.tearDownWithError()
+    }
+
     // MARK: Functions
 
     /// Starts Safari setup from the card form and asserts registration.

@@ -50,8 +50,8 @@ extension CardMaintenance {
   internal static func qualifiedSignature(
     pin2: String,
     expectedCertificate: Data?,
-    transport: Transport = .reader,
-    cardAccessNumber: String? = nil,
+    transport: Transport,
+    cardAccessNumber: String?,
     contentBuilder: @escaping @Sendable (Data) -> Data
   ) async -> QualifiedAnswer {
     let result = await onCard(

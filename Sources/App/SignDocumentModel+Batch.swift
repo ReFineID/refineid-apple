@@ -22,7 +22,11 @@
           try Data(contentsOf: source), named: source.lastPathComponent
         )
       }
-      let container = try await AsicSigner.sign(objects, pin2: pin2)
+      let container = try await AsicSigner.sign(
+        objects,
+        pin2: pin2,
+        transport: .reader,
+        cardAccessNumber: nil)
       try container.write(to: destination, options: .atomic)
     }
 

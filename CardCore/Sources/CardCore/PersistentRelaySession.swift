@@ -100,23 +100,23 @@ import Foundation
     public func start() {
       switch role {
       case .cardHolder:
-        let advertiser = MCNearbyServiceAdvertiser(
+        let startedAdvertiser = MCNearbyServiceAdvertiser(
           peer: localPeer,
           discoveryInfo: nil,
           serviceType: Self.serviceType
         )
-        advertiser.delegate = self
-        advertiser.startAdvertisingPeer()
-        self.advertiser = advertiser
+        startedAdvertiser.delegate = self
+        startedAdvertiser.startAdvertisingPeer()
+        self.advertiser = startedAdvertiser
 
       case .host:
-        let browser = MCNearbyServiceBrowser(
+        let startedBrowser = MCNearbyServiceBrowser(
           peer: localPeer,
           serviceType: Self.serviceType
         )
-        browser.delegate = self
-        browser.startBrowsingForPeers()
-        self.browser = browser
+        startedBrowser.delegate = self
+        startedBrowser.startBrowsingForPeers()
+        self.browser = startedBrowser
       }
       trace("started role=\(role)")
     }

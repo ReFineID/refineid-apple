@@ -139,8 +139,8 @@ internal enum TimestampCmsVerifier {
       throw TimestampTokenVerifier.Failure.signerCertificateMissing
     }
     guard
-      let signerData = embedded.first(where: {
-        Self.identifier(signer.identifier, in: token, matches: $0)
+      let signerData = embedded.first(where: { candidate in
+        Self.identifier(signer.identifier, in: token, matches: candidate)
       }),
       let signerCertificate = SecCertificateCreateWithData(
         nil, signerData as CFData
@@ -165,8 +165,8 @@ internal enum TimestampCmsVerifier {
     }
 
     let certificates = [signerData] + embedded.filter { $0 != signerData }
-    let parsed = certificates.compactMap {
-      SecCertificateCreateWithData(nil, $0 as CFData)
+    let parsed = certificates.compactMap { certificate in
+      SecCertificateCreateWithData(nil, certificate as CFData)
     }
     guard
       parsed.count == certificates.count,

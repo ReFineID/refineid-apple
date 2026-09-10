@@ -244,14 +244,12 @@ internal struct CardManagementView: View {
   // MARK: Lifecycle
 
   internal init(
-    readerCardIsPresent: Bool = false,
-    activationRequired: Bool = false,
-    cardAccessNumber: String? = nil,
-    activationScheme: ActivationScheme? = nil,
-    activationNeeds: CardActivationNeeds? = nil,
-    onActivationSucceeded: @escaping () -> Void = {
-      // optional hook; default is a no-op
-    }
+    readerCardIsPresent: Bool,
+    activationRequired: Bool,
+    cardAccessNumber: String?,
+    activationScheme: ActivationScheme?,
+    activationNeeds: CardActivationNeeds?,
+    onActivationSucceeded: @escaping () -> Void
   ) {
     startsWithReaderCard = readerCardIsPresent
     self.activationRequired = activationRequired

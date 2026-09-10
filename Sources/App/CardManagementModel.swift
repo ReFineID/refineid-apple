@@ -64,11 +64,11 @@ internal final class CardManagementModel: ObservableObject {
   }
 
   internal init(
-    transport: CardMaintenance.Transport? = nil,
-    activationRequired: Bool = false,
-    cardAccessNumber: String? = nil,
-    activationScheme: ActivationScheme? = nil,
-    activationNeeds: CardActivationNeeds? = nil
+    transport: CardMaintenance.Transport?,
+    activationRequired: Bool,
+    cardAccessNumber: String?,
+    activationScheme: ActivationScheme?,
+    activationNeeds: CardActivationNeeds?
   ) {
     self.activationRequired = activationRequired
     self.transport = transport ?? CardMaintenance.preferredTransport

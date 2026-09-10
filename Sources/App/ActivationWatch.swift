@@ -37,7 +37,12 @@
 
     @ObservationIgnored private var managementRefreshID = 0
 
-    internal let management = CardManagementModel()
+    internal let management = CardManagementModel(
+      transport: nil,
+      activationRequired: false,
+      cardAccessNumber: nil,
+      activationScheme: nil,
+      activationNeeds: nil)
 
     internal var awaitsActivation: Bool {
       state == .awaitsActivation

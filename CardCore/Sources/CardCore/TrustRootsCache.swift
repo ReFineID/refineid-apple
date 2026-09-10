@@ -46,11 +46,7 @@ public final class TrustRootsCache: @unchecked Sendable {
   public var allCertificates: [Data] {
     lock.lock()
     defer { lock.unlock() }
-    var list: [Data] = []
-    if let root = rootCaDER { list.append(root) }
-    if let inter = intermediateCaDER { list.append(inter) }
-    list.append(contentsOf: extraCasDER)
-    return list
+    return lockedAllCertificates()
   }
 
   /// Creates a new, empty in-memory trust roots cache.
@@ -98,7 +94,7 @@ public final class TrustRootsCache: @unchecked Sendable {
       return direct
     }
 
-    for candidate in allCertificates {
+    for candidate in lockedAllCertificates() {
       guard
         let cert = SecCertificateCreateWithData(nil, candidate as CFData),
         let subject = SecCertificateCopyNormalizedSubjectSequence(cert) as Data?
@@ -139,6 +135,18 @@ public final class TrustRootsCache: @unchecked Sendable {
     extraCasDER.removeAll()
     certsBySubject.removeAll()
     certsByFingerprint.removeAll()
+  }
+
+  /// All cached certificates.
+  ///
+  /// Call only with `lock` already held; `NSLock` is not recursive,
+  /// so locked callers must not re-lock.
+  private func lockedAllCertificates() -> [Data] {
+    var list: [Data] = []
+    if let root = rootCaDER { list.append(root) }
+    if let inter = intermediateCaDER { list.append(inter) }
+    list.append(contentsOf: extraCasDER)
+    return list
   }
 
   /// Indexes a certificate by its normalized subject sequence and SHA-256 fingerprint.
