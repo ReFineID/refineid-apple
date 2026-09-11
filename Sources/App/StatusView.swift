@@ -39,6 +39,7 @@
     @State private var activation = ActivationWatch()
     @State private var pin2Cache = Pin2Cache()
     @State private var offeringNumber = false
+    @State private var hasStoredNumber = false
     @State private var pin2 = ""
     @State private var accessNumber = ""
     @State private var format = SignatureFormat.pades
@@ -103,6 +104,9 @@
       .onChange(of: offeringNumber || awaitingAccessNumber) { _, _ in
         observeActivation()
       }
+      .onChange(of: cardPresence.isContactlessCardPresent) { _, _ in
+        refreshStoredNumber()
+      }
       .onChange(of: activation.defersRemoval) { wasDeferred, isDeferred in
         guard wasDeferred, !isDeferred, availability == .noCard else { return }
         react(to: .noCard)
@@ -124,7 +128,7 @@
 
     @ViewBuilder private var formBody: some View {
       if offeringNumber || awaitingAccessNumber {
-        SealedCardSection(offering: $offeringNumber)
+        SealedCardSection(offering: $offeringNumber, tryingStored: hasStoredNumber)
       } else if activation.awaitsActivation {
         CardActivationSection(model: activation.management) { model.refresh() }
         CardOutcomeSection(model: activation.management)
@@ -199,11 +203,24 @@
       )
     }
 
+    /// Whether a stored number exists to try before asking for one.
+    ///
+    /// Refreshed whenever the card set changes: the entry must only
+    /// appear when nothing is stored or the stored numbers just failed.
+    private func refreshStoredNumber() {
+      #if FEATURE_CONTACTLESS
+        hasStoredNumber = CardCredentialStore.hasStoredNumbers()
+      #else
+        hasStoredNumber = false
+      #endif
+    }
+
     /// Ready stands recovery down and a removed card resets its budget.
     ///
     /// The activation watch owns the unready path so inspection and
     /// recovery remain serialized.
     private func react(to availability: LoginIdentityModel.Availability) {
+      refreshStoredNumber()
       switch availability {
       case .ready:
         model.cancelRecovery(cardLeft: false)
