@@ -30,7 +30,11 @@ extension RappPairingModel {
     }
     try? vault.clearSelectedPair()
     RappPairNames.forgetAll()
-    _ = try? vault.deleteServiceNamespace(RappDeviceVault.serviceNamespace)
+    // Sweeping a thousand journals takes seconds; the list is already
+    // empty in memory, so the wipe leaves the main thread.
+    Task.detached(priority: .userInitiated) {
+      _ = try? vault.deleteServiceNamespace(RappDeviceVault.serviceNamespace)
+    }
     NotificationCenter.default.post(name: pairingsDidChangeNotification, object: nil)
   }
 

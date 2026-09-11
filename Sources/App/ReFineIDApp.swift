@@ -201,10 +201,6 @@ internal struct ReFineIDApp: App {
     // an upgrade rather than leave sensitive dead data in the keychain.
     CardCredentialStore.removeLegacySigningWindow()
 
-    #if os(iOS)
-      CardStateReset.eraseKeychainIfRequested()
-    #endif
-
     Self.startRemoteServices()
 
     // A hold marks the next NFC field as its own registration field, and
