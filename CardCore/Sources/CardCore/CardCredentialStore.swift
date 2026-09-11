@@ -238,40 +238,6 @@ public enum CardCredentialStore {
     #endif
   }
 
-  /// Every stored number to try, active offer first.
-  ///
-  /// A card answers with no individual identifier before PACE, so one
-  /// stored number cannot be selected for it: the driver tries each in
-  /// turn until one mints.
-  public static func cardAccessNumberCandidates() -> [CardCanOffer.Candidate] {
-    #if os(macOS)
-      var strings: [String] = []
-      if let stored = read(account: cardAccessNumberAccount) {
-        strings.append(stored)
-      }
-      for candidate in CardCanOffer.candidates()
-      where !strings.contains(candidate.digits) {
-        strings.append(candidate.digits)
-      }
-      return strings.compactMap { digits in
-        CardAccessNumber(digits: digits).map { number in
-          CardCanOffer.Candidate(digits: digits, number: number)
-        }
-      }
-    #else
-      return cardAccessNumber().map { CardCanOffer.Candidate(digits: "", number: $0) } ?? []
-    #endif
-  }
-
-  /// Remembers working digits for the card with this token serial.
-  ///
-  /// Called by the driver after a number mints: the serial is known
-  /// only once PACE has run, so the library grows one card at a time.
-  public static func rememberCan(digits: String, tokenSerial: TokenSerial) {
-    guard let printed = PrintedCardSerial(tokenSerial: tokenSerial) else { return }
-    CardCanOffer.remember(digits: digits, printedSerial: printed.value)
-  }
-
   /// The keychain's own answer to "could the card access number be read
   /// from this process?", for when it could not.
   ///

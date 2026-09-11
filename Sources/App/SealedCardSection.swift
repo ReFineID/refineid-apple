@@ -53,6 +53,13 @@
       case verdict
     }
 
+    /// What the section shows, as a pure function for tests.
+    nonisolated internal enum Display {
+      case instruction
+      case entry
+      case trying
+    }
+
     private static let boxCount = CardAccessNumber.digitCount
     private static let boxSpacing: CGFloat = 6
     private static let boxWidth: CGFloat = 32
@@ -90,22 +97,46 @@
     private var reduceMotion
 
     @State private var refused = false
+    @State private var refusedOnce = false
     @State private var step: Step?
     @State private var shakes: CGFloat = 0
     @FocusState private var focused: Bool
 
+    /// Whether a stored number exists to try before asking for one.
+    ///
+    /// Owned by the status window, which refreshes it whenever the
+    /// card set changes.
+    internal var tryingStored = false
+
     internal var body: some View {
       Section {
-        if offering {
+        switch Self.display(
+          offering: offering,
+          refused: refused,
+          refusedOnce: refusedOnce,
+          tryingStored: tryingStored)
+        {
+        case .instruction:
           instruction
-        } else {
+
+        case .entry:
           entry
             .modifier(Shake(animatableData: shakes))
+
+        case .trying:
+          trying
         }
       }
       .onChange(of: CardPresence.shared.isContactlessCardPresent) { _, present in
         advance(cardPresent: present)
       }
+    }
+
+    /// The line while a remembered number is tried: no boxes, so no
+    /// typing disturbs the attempt.
+    private var trying: some View {
+      Text("Trying the remembered number. Hold the card still.")
+        .foregroundStyle(.secondary)
     }
 
     /// The step the flow is on, forward only.
@@ -169,6 +200,24 @@
       Task.detached(priority: .utility) {
         CardCredentialStore.withdrawCardAccessNumberFromDriver()
       }
+    }
+
+    /// Entry appears only when nothing is stored or the stored
+    /// numbers just failed; otherwise the remembered number is
+    /// tried first and typing would disturb the attempt.
+    nonisolated internal static func display(
+      offering: Bool,
+      refused: Bool,
+      refusedOnce: Bool,
+      tryingStored: Bool
+    ) -> Display {
+      if offering {
+        return .instruction
+      }
+      if refused || refusedOnce || !tryingStored {
+        return .entry
+      }
+      return .trying
     }
 
     /// One digit's box: its frame, and the digit once typed.
@@ -271,6 +320,7 @@
               offering = false
               step = nil
               refused = true
+              refusedOnce = true
               if !reduceMotion {
                 withAnimation { shakes += 1 }
               }
