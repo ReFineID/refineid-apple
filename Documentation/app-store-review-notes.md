@@ -37,13 +37,16 @@ rather than the form. `Documentation/virtual-id-card.md` owns the
 design; the iOS notes walk a reviewer through it, fictional numbers
 included, so no step depends on guessing a value.
 
-The macOS notes state the app's network behaviour as shipped: outbound
-time-stamp and revocation fetches plus the local-network RAPP service used only
-with a cryptographically paired iPhone. They explain that each remote card
-operation needs explicit approval on the phone and that CAN, PIN 1, and PIN 2
-never cross to the Mac. There is no cloud relay or ReFineID backend. The macOS
-notes still close by offering a demonstration mode there too: nothing has
-asked for one on macOS.
+The macOS notes provide an explicit walkthrough of the Virtual ID Card, matching
+the iOS submission pattern. When no physical smart-card reader or card is
+attached, the main window offers an "Explore with a Virtual Demo Card" action.
+This allows App Reviewers to exercise the complete card lifecycle: status
+display, PIN changes and resets, retry floor refusal, and qualified document
+signing of sample PDFs with fictional credentials without physical hardware.
+
+The macOS notes also document the network behavior and state that the SCS
+loopback signing server (127.0.0.1) is disabled by default and requires
+explicit holder opt-in in Settings before initializing local certificate trust.
 
 ## Where the notes live
 

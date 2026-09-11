@@ -50,7 +50,8 @@ User story is:
   transferring CAN, PIN 1, or PIN 2 to the Mac.
 - Contactless card reading on a reader's contactless antenna.
 - Card activation for factory-fresh cards.
-- The SCS loopback signing server (127.0.0.1) that web pages sign through.
+- The SCS loopback signing server (127.0.0.1) that web pages sign through, disabled by default with an explicit opt-in toggle in Settings.
+- Virtual ID Card demonstration mode accessible from the no-card empty state, enabling App Reviewers to exercise all card management and signing flows without physical hardware.
 - The visible PDF stamp carrying the holder's name, SATU and card ink.
 - Supported-card, reader, extension, and application version status.
 - Display of PIN1, PIN2, and PUK attempts remaining.
@@ -76,10 +77,9 @@ User story is:
 - Safari extensions, browser shells, Internet relays, macOS NFC, telemetry,
   analytics, accounts, and cloud services.
 
-The SCS server binds only the loopback interface and serves only pages the
-holder opens; enabling it means the app requests the network-server
-entitlement and installers that touch certificate trust must describe that
-to App Review (see the review notes).
+The SCS server binds only the loopback interface and is strictly opt-in via
+Settings; it starts only after explicit holder consent, explaining the local
+loopback port and user certificate trust before invoking any system trust prompts.
 
 Card management and PIN2 signing entered scope on 2026-08-04 (see
 `Documentation/decisions.md`); iPadOS and iOS follow the macOS

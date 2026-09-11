@@ -650,3 +650,21 @@ all. They are worth keeping.
 - Stale registrations from old build locations produce duplicate
   identities in the picker, one of which cannot sign. Deregister with
   `pluginkit -r` and re-insert the card so `ctkd` re-enumerates.
+
+## Status update: 26.9.11
+
+- **Cross-platform RAPP qualification verified**:
+  Device pairing using clean 6-digit numeric codes (Noise XXpsk3) is verified
+  and qualified across all supported platform combinations:
+  Android - Mac, Android - Linux, Mac - iPhone, Mac - Android, Linux - Android,
+  and Windows. All references to deprecated QR pairing are removed from documentation.
+- **macOS App Store release path**:
+  - **Virtual ID Card on macOS**: Lifting `DemoMode` and `VirtualIDCard` to
+    macOS to provide an "Explore with a Virtual Demo Card" action in `StatusView`
+    empty-state, preventing Guideline 2.1(a) rejection and enabling reviewer walkthrough.
+  - **SCS Server Opt-In**: The 127.0.0.1 loopback signing server is made strictly
+    opt-in behind an explicit Settings toggle, avoiding unprompted
+    `SecTrustSettingsSetTrustSettings` dialogs on launch.
+  - **Mac App Store Screenshots**: Building a dedicated screenshot pipeline
+    to capture localized 2880x1800 App Store desktop screenshots driven by
+    synthetic Virtual ID Card states.

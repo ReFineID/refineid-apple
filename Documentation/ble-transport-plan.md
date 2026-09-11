@@ -54,8 +54,8 @@ Characteristics:
     UUID: FA1D0003-C34A-4836-843B-7603B5749A32
 ```
 
-### 2.4 QR Pairing Offer Parameters
-When advertising BLE support in the pairing QR code, the `transport-candidate` parameter map is:
+### 2.4 Pairing Offer Parameters
+When advertising BLE support in the 6-digit code pairing offer, the `transport-candidate` parameter map is:
 
 ```cddl
 ble-parameters = {
@@ -83,7 +83,7 @@ ble-rendezvous = [
 | :--- | :--- |
 | **Radio Eavesdropping** | Payload is Noise-encrypted (`Noise_XXpsk3` / `Noise_KK` with ChaCha20-Poly1305) before transmission over BLE. |
 | **Device Tracking / Sniffing** | No device names, user identifiers, card numbers, or certificates are advertised in BLE beacons. Advertisements use standard rotating Resolvable Private Addresses (RPA). |
-| **Man-in-the-Middle (MITM)** | The 256-bit QR pairing secret authenticates the initial pairing (`psk3`). Stored static Curve25519 keys mutually authenticate all subsequent sessions (`Noise_KK`). |
+| **Man-in-the-Middle (MITM)** | The 6-digit numeric pairing code (mixed via HKDF into `psk3`) authenticates the initial pairing. Stored static Curve25519 keys mutually authenticate all subsequent sessions (`Noise_KK`). |
 | **Replay / Injection** | Strictly sequential Noise transport nonces; any replayed, dropped, or modified frame fails Poly1305 authentication and instantly drops the session. |
 | **Relay / Distance Extension** | Monotonic synchronous response timeouts (30s max for card operations) plus explicit physical authorization on the iPhone screen. |
 
@@ -94,7 +94,7 @@ ble-rendezvous = [
 ### 4.1 Implementation Files in `CardCore/Sources/CardCore/`
 - **`BleRelaySession.swift`**: Manages `CBCentralManager` (client) and `CBPeripheralManager` (server) lifecycle.
 - **`BleL2CAPChannelHandler.swift`**: Wraps `CBL2CAPChannel` input/output streams into the standard `RappFrameTransport` interface.
-- **`BleRelayEndpoint.swift`**: Represents Service UUID and PSM endpoints matching the QR candidate.
+- **`BleRelayEndpoint.swift`**: Represents Service UUID and PSM endpoints matching the offer candidate.
 - **`BleRelayFraming.swift`**: Handles length-prefix boundary verification.
 
 ### 4.2 Transport Selection & Fallback Policy

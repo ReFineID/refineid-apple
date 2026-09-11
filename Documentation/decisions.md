@@ -1106,3 +1106,22 @@ phone acting as a contactless card reader revealed two timing interactions:
    exercising the exact relay and token extension path without requiring manual
    scene setup.
 
+## 2026-09-11: 6-Digit Pairing Standard, Cross-Platform Qualification, and macOS Store Gates
+
+1. **6-Digit Pairing Standard**: QR code pairing is deprecated and removed from
+   documentation. Device pairing uses a clean 6-digit numeric code (Noise XXpsk3)
+   with automatic subsequent silent reconnections.
+2. **Cross-Platform Qualification Verified**: RAPP device pairing and card proxying
+   have been verified and qualified across all supported combinations:
+   Android - Mac, Android - Linux, Mac - iPhone, Mac - Android, Linux - Android,
+   and Windows.
+3. **Virtual ID Card for macOS App Review**: To ensure compliance with App Review
+   Guideline 2.1(a) without physical hardware, Virtual ID Card demo mode is
+   ported to macOS, surfaced via an explicit "Explore with a Virtual Demo Card"
+   action in `StatusView` when no card is present.
+4. **SCS Loopback Server is Opt-In**: The 127.0.0.1 loopback signing server is
+   disabled by default. It starts only when explicitly enabled by the user in
+   Settings, preventing unprompted `SecTrustSettingsSetTrustSettings` trust
+   prompts on first launch.
+
+

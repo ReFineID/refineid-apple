@@ -65,8 +65,10 @@ shipping topology instead of Debug builds.
 
 ## App Store release
 
-- [ ] Give App Review accurate card/reader instructions, Virtual ID Card
-  steps, hardware limitations, extension behavior.
+- [ ] Port Virtual ID Card to macOS: add "Explore with a Virtual Demo Card" in `StatusView` empty state and lift `DemoMode` to macOS for reviewer testing without hardware (Guideline 2.1(a)).
+- [ ] Make SCS server opt-in in macOS Settings: defer listener start and `SecTrustSettingsSetTrustSettings` behind an explicit toggle with explanatory UI.
+- [ ] Develop Mac App Store screenshot pipeline: capture localized 2880x1800 screenshots with synthetic demo states.
+- [ ] Give App Review accurate card/reader instructions, Virtual ID Card steps, hardware limitations, extension behavior.
 - [ ] Localized `What's New` drafts from the exact diff, human-approved.
 
 ## Xcode Cloud
@@ -107,10 +109,10 @@ reader and RAPP CTK extensions (smart-card vs network entitlements, never
 both). CardCore test suites (`CardCoreTests`, `RappEngineTests`) green.
 Activation and PIN management are deliberately not RAPP operations.
 
-Not proved: the physical two-device matrix (Phase E); a hardware-free RAPP UI
-harness — it must run the real coordinators and may virtualize only
-transport and card effects, never inject SwiftUI state; independent interop
-and external security review. The 2026-08-17 iPad-requester run is evidence.
+Concept and cross-platform verification: 6-digit numeric code pairing and
+operations are qualified and verified across Android - Mac, Android - Linux,
+Mac - iPhone, Mac - Android, Linux - Android, and Windows. Formal Phase E
+archive qualification runs against the exact candidate artifact without dev-only crutches.
 
 Next: blocker 1; then the hardware-free harness (start at `RappPairingUI`,
 `RappAuthorizationInbox`, `RappPhoneProxyDispatcher`,
@@ -157,7 +159,7 @@ bypass the production protocol path.
   card-command counts proven, retry-floor refusal proves zero; durable state
   asserted after restart.
 - E, physical qualification: record hashes, versions, devices, card, reader,
-  sanitized start state; QR pairing, status, Safari auth, signing, denial,
+  sanitized start state; 6-digit code pairing, status, Safari auth, signing, denial,
   card removal, relay loss, app/extension restart, one synthetic fail-stop,
   durable revocation, re-pairing; extensions never claim each other's
   capability; never spend a real credential retry. Accept: the exact archived
