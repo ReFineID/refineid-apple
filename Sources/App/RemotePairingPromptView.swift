@@ -47,7 +47,7 @@
         VStack(alignment: .leading, spacing: Layout.bulletItemSpacing) {
           bulletItem(
             String(
-              localized: "Open RefineID on phone (connect with \(formattedCode) if code is needed)"
+              localized: "Open RefineID on phone (code \(formattedCode))."
             )
           )
           if cardPresence.isReaderConnected {

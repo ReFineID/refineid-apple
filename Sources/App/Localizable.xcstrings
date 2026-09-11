@@ -2481,18 +2481,18 @@
         }
       }
     },
-    "Open RefineID on phone (connect with %@ if code is needed)": {
+    "Open RefineID on phone (code %@).": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Avaa RefineID puhelimessa (yhdistä koodilla %@, jos koodia pyydetään)"
+            "value": "Avaa RefineID kännykässä (koodi %@)."
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Öppna RefineID på telefonen (anslut med %@ om kod behövs)"
+            "value": "Öppna RefineID i mobilen (kod %@)."
           }
         }
       }

@@ -176,7 +176,7 @@
     internal func pairingPromptInstructionLocalization() {
       let code = "123 456"
       let prompt = String(
-        localized: "Open RefineID on phone (connect with \(code) if code is needed)"
+        localized: "Open RefineID on phone (code \(code))."
       )
       #expect(prompt.contains(code))
       let readerPrompt = String(localized: "Insert card to reader")
