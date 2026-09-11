@@ -62,6 +62,10 @@ public enum CardCanOffer {
   internal static func withdraw() {
     clearRefusal()
     CardCredentialStore.deleteShared(account: offerAccount)
+    // Migration: builds before the data-protection opt-in wrote these
+    // ungrouped, where no grouped query can see them.
+    CardCredentialStore.delete(account: offerAccount)
+    CardCredentialStore.delete(account: refusalAccount)
   }
 
   /// Records that the card refused the offer.

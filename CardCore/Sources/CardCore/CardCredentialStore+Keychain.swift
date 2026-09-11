@@ -62,10 +62,14 @@ extension CardCredentialStore {
   ///
   /// Only new machine-use accounts use this: existing items were
   /// created without a group, and asking for them with one would miss.
+  /// A group also opts into the data-protection keychain: the file
+  /// keychain silently drops the group, so shared items would land
+  /// ungrouped and stay invisible to the other process.
   internal static func query(account: String, accessGroup: String?) -> [String: Any] {
     var coordinates = query(account: account)
     if let accessGroup {
       coordinates[kSecAttrAccessGroup as String] = accessGroup
+      coordinates[kSecUseDataProtectionKeychain as String] = true
     }
     return coordinates
   }

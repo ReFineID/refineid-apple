@@ -90,10 +90,14 @@
     internal func accessGroupIsOnlySetWhenShared() {
       let ungrouped = CardCredentialStore.query(account: "refineid-offer-can", accessGroup: nil)
       #expect(ungrouped[kSecAttrAccessGroup as String] == nil)
+      #expect(
+        ungrouped[kSecUseDataProtectionKeychain as String] as? Bool
+          == KeychainPlatform.usesDataProtection)
       let grouped = CardCredentialStore.query(
         account: "refineid-offer-can", accessGroup: "GRP.fi.refineid.ReFineID")
       #expect(
         grouped[kSecAttrAccessGroup as String] as? String == "GRP.fi.refineid.ReFineID")
+      #expect(grouped[kSecUseDataProtectionKeychain as String] as? Bool == true)
     }
 
     @Test
