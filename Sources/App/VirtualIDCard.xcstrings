@@ -93,6 +93,29 @@
         }
       }
     },
+    "header.subtitle" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulated card and token state for testing"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simuloitu kortin ja tunnisteen tila testausta varten"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulerat kort- och tokentillstånd för testning"
+          }
+        }
+      }
+    },
     "activation.generation" : {
       "extractionState" : "stale",
       "localizations" : {

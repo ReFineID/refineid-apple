@@ -27,11 +27,11 @@ internal struct ReFineIDApp: App {
     /// Content sizing keeps it fitted afterwards; this only stops the
     /// pairing invitation's one long line from deciding the width.
     private enum StatusLayout {
-      static let windowWidth: CGFloat = 720
-      static let windowHeight: CGFloat = 520
+      static let windowWidth: CGFloat = 560
+      static let windowHeight: CGFloat = 400
       static let overlayPadding: CGFloat = 20
-      static let editorMinWidth: CGFloat = 500
-      static let editorMinHeight: CGFloat = 600
+      static let editorWidth: CGFloat = 580
+      static let editorHeight: CGFloat = 640
     }
   #endif
 
@@ -78,15 +78,22 @@ internal struct ReFineIDApp: App {
             ProductSite.presentAboutPanel()
           }
           Divider()
-          Button(demoMode.isActive ? "Exit Demo Mode" : "Demo Mode…") {
-            if demoMode.isActive {
+          if demoMode.isActive {
+            Button(String(localized: "Edit Virtual Card…")) {
+              demoMode.setEditorPresented(true)
+            }
+            .keyboardShortcut("e", modifiers: [.command, .option])
+            Button(String(localized: "Exit Demo Mode")) {
               demoMode.deactivate()
-            } else {
+            }
+            .keyboardShortcut("d", modifiers: [.command, .option])
+          } else {
+            Button(String(localized: "Demo Mode…")) {
               demoMode.activate(scenario: DemoMode.defaultScenario)
               demoMode.setEditorPresented(true)
             }
+            .keyboardShortcut("d", modifiers: [.command, .option])
           }
-          .keyboardShortcut("d", modifiers: [.command, .option])
         }
         CommandGroup(replacing: .help) {
           // Intentionally empty: no help item, so no Help menu.
@@ -192,8 +199,10 @@ internal struct ReFineIDApp: App {
             showsVirtualCardEditor = false
           }
           .frame(
-            minWidth: StatusLayout.editorMinWidth,
-            minHeight: StatusLayout.editorMinHeight)
+            minWidth: StatusLayout.editorWidth,
+            idealWidth: StatusLayout.editorWidth,
+            minHeight: StatusLayout.editorHeight,
+            idealHeight: StatusLayout.editorHeight)
         }
       )
       .onChange(of: demoMode.isEditorPresented) { _, presented in
