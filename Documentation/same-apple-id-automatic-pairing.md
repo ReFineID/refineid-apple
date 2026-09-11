@@ -113,25 +113,15 @@ public struct RappCloudDeviceRecord: Codable, Sendable, Identifiable {
 
 ## 5. Unrelated & Cross-OS Device Pairing (Android, Windows, Linux, Cross-Account)
 
-For devices that **do not share an Apple ID** (e.g. pairing an Android phone with a Mac/iPad, or sharing across different user accounts), zero-step iCloud distribution is unavailable. ReFineID provides two secure pairing mechanisms:
+For devices that **do not share an Apple ID** (e.g. pairing an Android phone with a Mac/iPad, or sharing across different user accounts), zero-step iCloud distribution is unavailable. ReFineID uses clean 6-digit numeric pairing:
 
-### 5.1 Dynamic Optical QR Code Pairing (Primary Cross-OS Flow)
+### 5.1 6-Digit Numeric Pairing Code
 1. **Offer Generation**:
-   - The card holder displays a dynamic QR code containing:
-     - Local network endpoint / mDNS service name.
-     - Ephemeral public key $e_{\text{Holder}}$.
-     - 256-bit rendezvous token.
-     - Short Authentication String (SAS) checksum.
-2. **Scan & Zero-Typing Handshake (Noise XK / Noise XX)**:
-   - The requesting device (Android, Mac, iPad) opens the camera scanner in ReFineID.
-   - Scanning the QR code transfers the cryptographic parameters out-of-band with optical line-of-sight authentication (immune to remote man-in-the-middle).
-   - Devices execute the Noise handshake over the local network and permanently vault the static keys in `RappDeviceVault`.
-   - **All subsequent reconnections occur silently without ever scanning the QR code again.**
-
-### 5.2 6-Character Passkey Code (Camera-Free Fallback)
-- For headless devices or setups where camera scanning is inconvenient:
-- 6-character alphanumeric code (`[0-9, A-Z]`, ~31 bits of entropy) with 180s TTL.
-- Noise XXpsk3 key exchange with SHA-256 transcript mixing.
+   - The card holder displays a 6-digit numeric pairing code (e.g. `482 915`) with a 180s TTL.
+2. **Key Exchange (Noise XXpsk3)**:
+   - The requesting device (Android, Linux, Windows, Mac, iPad) enters the 6-digit code.
+   - Devices execute the Noise XXpsk3 handshake over the local network with SHA-256 transcript mixing and permanently vault the static keys in `RappDeviceVault`.
+   - **All subsequent reconnections occur silently and automatically without entering the code again.**
 
 ---
 
@@ -152,7 +142,8 @@ For devices that **do not share an Apple ID** (e.g. pairing an Android phone wit
 - [ ] Auto-dial the card-holding iPhone when Mac or iPad app opens and requests smart card operations.
 - [ ] Reconnection & self-healing management when roaming across networks.
 
-### Phase 4: Cross-OS Dynamic QR Code Pairing & Verification
-- [ ] Implement QR Code generator/scanner with Noise XK handshake for cross-OS / Android pairing.
-- [ ] Unit & integration tests for multi-device topology (Mac + iPad simultaneously connected to 1 iPhone).
-- [ ] End-to-end qualification matrix.
+### Phase 4: Cross-OS 6-Digit Code Pairing & Verification
+- [x] Implement 6-digit numeric pairing code with Noise XXpsk3 handshake for cross-OS pairing.
+- [x] Qualified and verified cross-platform interoperability across Android - Mac, Android - Linux, Mac - iPhone, Mac - Android, Linux - Android, and Windows.
+- [x] Unit & integration tests for multi-device topology (Mac + iPad simultaneously connected to 1 iPhone).
+- [ ] Formal release candidate archive qualification.

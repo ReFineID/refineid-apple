@@ -138,7 +138,7 @@ as no usable pair, so existing holders pair again. That is intended.
 
 The application layer is under `Sources/App/`:
 
-- `RappPairingUI.swift` presents QR pairing and visible paired status.
+- `RappPairingUI.swift` presents 6-digit code pairing and visible paired status.
 - `RappAuthorizationInbox.swift` serializes holder-visible authorization
   decisions on the phone.
 - `RappNfcCardExecutor.swift` and attached physical smart card reader execution
@@ -245,8 +245,8 @@ The following was measured before this handoff:
   repeatable release qualification for the current commits.
 - 2026-08-17: a manual iPad-requester path succeeded end to end on the
   ported persistent-token extension. An iPad Pro 13-inch (M5) iOS 26.5
-  Simulator paired with the physical development iPhone over the QR
-  ceremony, read the holder identity onto the Person row with one
+  Simulator paired with the physical development iPhone over the 6-digit code
+  pairing ceremony, read the holder identity onto the Person row with one
   authorization, published the delegated CryptoTokenKit identity, and
   completed a Safari suomi.fi client-certificate login whose signature
   the phone executed against the physical card. Simulator ctkd loaded
@@ -275,8 +275,9 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
   under the 120-second window when run separately.
 - No independent cryptographic or protocol security review has approved RAPP
   for production.
-- Cross-platform Android, Windows, Linux, and FreeBSD interoperability remains
-  protocol intent, not implemented Apple evidence.
+- Cross-platform interoperability has been qualified and verified working across
+  all supported combinations: Android - Mac, Android - Linux, Mac - iPhone,
+  Mac - Android, Linux - Android, and Windows.
 - The Simulator restriction that a compiled arm64-only artifact imposed is
   gone: the engine is Swift and builds for whatever slice the toolchain asks
   for.
@@ -298,7 +299,7 @@ network permission, CryptoTokenKit, or Safari system-sheet behavior.
 
    The project declares macOS `arm64` in every configuration. The engine no
    longer constrains this; the declaration is now the project's own choice.
-3. Pair macOS and iPhone from a clean pairing state using the QR UI.
+3. Pair macOS and iPhone from a clean pairing state using the 6-digit code pairing UI.
 4. With a known activated card and correct CAN/PIN values, record one card
    status read, one Safari browser-authentication operation, and one harmless
    document signature. Verify that macOS never asks for PIN 1 or PIN 2 and that

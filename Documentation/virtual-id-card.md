@@ -3,11 +3,11 @@
 ## Purpose
 
 Virtual ID Card is the deterministic card and device harness for the ReFineID
-iPhone and iPad UI. It exists for three jobs:
+Apple platforms (iOS, iPadOS, and macOS) UI. It exists for three jobs:
 
 1. Exercise state-machine behavior without spending attempts on a physical card.
 2. Give App Store Review an explicit, fictional card whose state can be edited.
-3. Run repeatable unit and UI tests on local simulators and Xcode Cloud.
+3. Run repeatable unit and UI tests on local simulators, Macs, and Xcode Cloud.
 
 It is not a second product UI. Demo-mode CardMaintenance calls are routed to a
 VirtualIDCard actor and the normal activation, PIN-change, PIN-reset, retry-floor,
@@ -15,12 +15,11 @@ and outcome views consume the resulting production types.
 
 ## Isolation boundary
 
-Virtual mode is opt-in for one process. The App Store build enters it through
-the Demonstration Home Screen quick action. Debug UI tests enter it with:
-
-```text
---virtual-card <scenario>
-```
+Virtual mode is opt-in for one process. The App Store build enters it through:
+- iOS: the Demonstration Home Screen quick action.
+- macOS: the "Explore with a Virtual Demo Card" action in the empty-state window
+  or "Demo Mode" menu item.
+- Debug UI tests: `--virtual-card <scenario>`.
 
 The physical path remains the default. While virtual mode is active:
 
