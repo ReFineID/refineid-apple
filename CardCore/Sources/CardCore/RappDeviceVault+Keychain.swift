@@ -272,4 +272,82 @@ extension RappDeviceVault {
       throw Failure.unavailable(status)
     }
   }
+
+  /// Deletes every generic-password item whose service starts with the
+  /// namespace prefix, and returns how many were deleted.
+  ///
+  /// Both the file and data-protection stores are swept: shared items land
+  /// in the data-protection store while ungrouped items stay in the file
+  /// store, and neither query sees the other's items. The synchronizable
+  /// filter is omitted so writers that rely on the default are swept too.
+  public func deleteServiceNamespace(_ prefix: String = "fi.refineid") throws -> Int {
+    try synchronized {
+      guard !prefix.isEmpty else { throw Failure.malformed }
+      if TestCredentialEnvironment.isTestMode {
+        let services = inMemoryStore.keys.filter { $0.hasPrefix(prefix) }
+        let deleted = services.reduce(0) { $0 + (inMemoryStore[$1]?.count ?? 0) }
+        for service in services {
+          inMemoryStore.removeValue(forKey: service)
+        }
+        return deleted
+      }
+      var deleted = 0
+      for dataProtection in [false, true] {
+        for coordinate in try namespaceCoordinates(
+          prefix: prefix, dataProtection: dataProtection)
+        {
+          try deleteNamespacedItem(
+            service: coordinate.service,
+            account: coordinate.account,
+            dataProtection: dataProtection)
+          deleted += 1
+        }
+      }
+      return deleted
+    }
+  }
+
+  private func namespaceCoordinates(
+    prefix: String, dataProtection: Bool
+  ) throws -> [(service: String, account: String)] {
+    var query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecMatchLimit as String: kSecMatchLimitAll,
+      kSecReturnAttributes as String: kCFBooleanTrue,
+      kSecUseDataProtectionKeychain as String: dataProtection,
+    ]
+    var output: CFTypeRef?
+    let status = SecItemCopyMatching(query as CFDictionary, &output)
+    switch status {
+    case errSecSuccess:
+      guard let items = output as? [[String: Any]] else { throw Failure.malformed }
+      return items.compactMap { item in
+        guard let service = item[kSecAttrService as String] as? String,
+          service.hasPrefix(prefix),
+          let account = item[kSecAttrAccount as String] as? String
+        else { return nil }
+        return (service: service, account: account)
+      }
+
+    case errSecItemNotFound:
+      return []
+
+    default:
+      if Self.isInteractionNotAllowed(status) { return [] }
+      throw Failure.unavailable(status)
+    }
+  }
+
+  private func deleteNamespacedItem(
+    service: String, account: String, dataProtection: Bool
+  ) throws {
+    var query = itemQuery(service: service, account: account)
+    query[kSecUseDataProtectionKeychain as String] = dataProtection
+    query.removeValue(forKey: kSecAttrAccessGroup as String)
+    let status = SecItemDelete(query as CFDictionary)
+    if Self.isInteractionNotAllowed(status) { return }
+    guard status == errSecSuccess || status == errSecItemNotFound else {
+      throw Failure.unavailable(status)
+    }
+  }
 }

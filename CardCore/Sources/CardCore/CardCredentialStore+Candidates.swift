@@ -24,7 +24,8 @@ extension CardCredentialStore {
         }
       }
     #else
-      return cardAccessNumber().map { CardCanOffer.Candidate(digits: "", number: $0) } ?? []
+      guard let number = cardAccessNumber() else { return [] }
+      return [CardCanOffer.Candidate(digits: "", number: number)]
     #endif
   }
 

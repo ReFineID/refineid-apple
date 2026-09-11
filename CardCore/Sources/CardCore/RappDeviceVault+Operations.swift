@@ -110,6 +110,16 @@ extension RappDeviceVault {
     }
   }
 
+  /// Deletes one requester journal record; absent is not an error.
+  public func removeRequester(pairID: Data, operationID: Data) throws {
+    try synchronized {
+      try requireOperationIdentifiers(pairID: pairID, operationID: operationID)
+      try deleteItem(
+        service: operationService(namespace: namespace.requester, pairID: pairID),
+        account: operationID.hexadecimal)
+    }
+  }
+
   /// Deletes all requester and proxy journal records for the pair.
   public func removeOperationRecords(pairID: Data) throws {
     try synchronized {

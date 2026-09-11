@@ -84,8 +84,23 @@ public enum CardCanOffer {
   }
 
   /// Forgets the stored number for the card with this printed serial.
-  internal static func forget(printedSerial: String) {
+  public static func forget(printedSerial: String) {
     CardCredentialStore.deleteShared(account: libraryAccount(printedSerial: printedSerial))
+  }
+
+  /// The printed serials with a stored number, in stable account order.
+  ///
+  /// Serials are printed on the card and safe to display; digits never
+  /// leave the keychain through this call.
+  public static func storedSerials() -> [String] {
+    libraryAccounts().compactMap { account in
+      guard
+        account.hasPrefix(libraryPrefix),
+        account.hasSuffix(librarySuffix)
+      else { return nil }
+      let serial = account.dropFirst(libraryPrefix.count).dropLast(librarySuffix.count)
+      return serial.isEmpty ? nil : String(serial)
+    }
   }
 
   /// Remembers `digits` for the card with this printed serial.

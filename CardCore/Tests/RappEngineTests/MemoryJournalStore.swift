@@ -13,6 +13,8 @@ internal struct MemoryJournalStore: JournalStore, RequesterJournalStore {
 
   internal private(set) var requesterWrites: [RequesterJournalRecord] = []
 
+  internal private(set) var requesterRemovals: [Data] = []
+
   internal private(set) var retainedResults: [OperationResultMessage] = []
 
   internal var failNextWrite = false
@@ -54,6 +56,11 @@ internal struct MemoryJournalStore: JournalStore, RequesterJournalStore {
   internal mutating func persist(_ record: RequesterJournalRecord) throws {
     try failIfRequested()
     requesterWrites.append(record)
+  }
+
+  internal mutating func remove(operationIdentifier: Data) throws {
+    try failIfRequested()
+    requesterRemovals.append(operationIdentifier)
   }
 
   private mutating func failIfRequested() throws {

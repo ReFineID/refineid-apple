@@ -26,6 +26,20 @@ internal enum CardStateReset {
     }
   }
 
+  /// Deletes the whole keychain namespace when the system Settings
+  /// toggle asked for it, then switches the toggle back off.
+  ///
+  /// The key names the switch in Settings.bundle/Root.plist. The bundle
+  /// can only flip defaults, so the app honors it on launch.
+  #if os(iOS)
+    internal static func eraseKeychainIfRequested() {
+      let requestKey = "fi.refineid.eraseKeychainRequested"
+      guard UserDefaults.standard.bool(forKey: requestKey) else { return }
+      _ = try? RappDeviceVault().deleteServiceNamespace()
+      UserDefaults.standard.set(false, forKey: requestKey)
+    }
+  #endif
+
   /// Whether this device has any card or identity state to forget.
   ///
   /// Every lookup is passive. In particular, this does not enumerate
