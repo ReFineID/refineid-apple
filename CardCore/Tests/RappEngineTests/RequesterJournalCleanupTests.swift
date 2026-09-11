@@ -103,6 +103,42 @@ internal struct RequesterJournalCleanupTests {
     #expect(store.requesterWrites.last?.state == .ambiguous)
   }
 
+  /// Finishing operations in bulk leaves nothing stored: every persisted
+  /// journal is removed at its terminal state, so the live set stays
+  /// empty no matter how many operations ran.
+  @Test
+  internal func repeatedTerminalOperationsLeaveNoStoredJournals() throws {
+    var store = MemoryJournalStore()
+    var denied: [Data] = []
+    for fill in 0..<5 {
+      var proxy = ProxyOperationEngine(grantedProfiles: [.authentication], recovered: [])
+      var requester = RequesterOperationEngine(recovered: [])
+      let identifier = Data(
+        repeating: UInt8(fill), count: EngineFixture.operationIdentifier.count)
+      let request = try engineRequest(
+        operation: signingOperation(), operationIdentifier: identifier)
+      let requestMessage = try requester.begin(request, store: &store)
+      _ = try proxy.receive(
+        requestMessage, store: &store, nowMilliseconds: EngineFixture.nowMilliseconds,
+        maximumLifetimeMilliseconds: EngineFixture.maximumLifetimeMilliseconds)
+      try proxy.prerequisitesComplete(operationIdentifier: identifier)
+      let denial = try proxy.finishFailure(
+        operationIdentifier: identifier, error: .userDenied, store: &store)
+      guard case .sendFailure(let deniedMessage, _) = denial else {
+        Issue.record("a denial produces a failure result")
+        return
+      }
+      _ = try requester.receive(deniedMessage, store: &store)
+      denied.append(identifier)
+    }
+
+    let persisted = Set(store.requesterWrites.map(\.operationIdentifier))
+    let removed = Set(store.requesterRemovals)
+    #expect(persisted == Set(denied))
+    #expect(removed == Set(denied))
+    #expect(persisted.subtracting(removed).isEmpty)
+  }
+
   /// A late status report annotates a terminal operation in memory only;
   /// it must not resurrect the removed journal back into storage.
   @Test

@@ -212,6 +212,11 @@ internal final class CardCredentialsModel: ObservableObject {
     let outcome = CardStateReset.perform()
     CardCredentialStore.forgetAll()
     await Self.removeAllRappConfiguration()
+    // The journals reference pairings that no longer exist; sweeping them
+    // takes seconds, so the wipe leaves the main thread.
+    Task.detached(priority: .userInitiated) {
+      _ = try? RappDeviceVault().deleteServiceNamespace()
+    }
     refresh()
     if !outcome.succeeded {
       failure = outcome.summary
