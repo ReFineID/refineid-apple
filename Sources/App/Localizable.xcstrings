@@ -2465,6 +2465,38 @@
         }
       }
     },
+    "Insert card to reader": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aseta kortti lukijaan"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sätt i kortet i läsaren"
+          }
+        }
+      }
+    },
+    "Open RefineID on phone (connect with %@ if code is needed)": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avaa RefineID puhelimessa (yhdistä koodilla %@, jos koodia pyydetään)"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna RefineID på telefonen (anslut med %@ om kod behövs)"
+          }
+        }
+      }
+    },
     "Connect phone as reader with code: %@": {
       "localizations": {
         "fi": {

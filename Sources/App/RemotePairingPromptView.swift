@@ -11,6 +11,8 @@
       /// The invitation wraps past this width instead of stretching
       /// the content-sized window to fit one long line.
       static let promptMaxWidth: CGFloat = 600
+      static let bulletSpacing: CGFloat = 6
+      static let bulletItemSpacing: CGFloat = 6
     }
 
     @StateObject private var model = RappPairingModel()
@@ -42,29 +44,22 @@
     @ViewBuilder private var promptText: some View {
       if case .offer(let code) = model.phase {
         let formattedCode = RappPairingCode.formatted(code)
-        if cardPresence.isReaderConnected {
-          Text(
+        VStack(alignment: .leading, spacing: Layout.bulletItemSpacing) {
+          bulletItem(
             String(
-              localized: """
-                Insert your identity card into the reader, open RefineID on iPhone, \
-                or connect an Android phone with code: \(formattedCode)
-                """
+              localized: "Open RefineID on phone (connect with \(formattedCode) if code is needed)"
             )
           )
-          .textSelection(.enabled)
-          .accessibilityIdentifier("pairingPrompt")
-        } else {
-          Text(
-            String(
-              localized: """
-                Connect a card reader, open RefineID on iPhone, \
-                or connect an Android phone with code: \(formattedCode)
-                """
+          if cardPresence.isReaderConnected {
+            bulletItem(
+              String(
+                localized: "Insert card to reader"
+              )
             )
-          )
-          .textSelection(.enabled)
-          .accessibilityIdentifier("pairingPrompt")
+          }
         }
+        .textSelection(.enabled)
+        .accessibilityIdentifier("pairingPrompt")
       } else if case .connecting = model.phase {
         Text(String(localized: "Connecting..."))
           .foregroundStyle(.secondary)
@@ -74,6 +69,15 @@
           .foregroundStyle(.secondary)
           .accessibilityIdentifier("pairingPrompt")
       }
+    }
+
+    private func bulletItem(_ text: String) -> some View {
+      HStack(alignment: .firstTextBaseline, spacing: Layout.bulletSpacing) {
+        Text("•")
+          .accessibilityHidden(true)
+        Text(text)
+      }
+      .accessibilityElement(children: .combine)
     }
 
     private func ensureOffer() {
