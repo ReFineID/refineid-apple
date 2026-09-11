@@ -20,12 +20,13 @@
     private static let paneHeight: CGFloat = 300
 
     @ObservedObject private var cardPresence = CardPresence.shared
+    @ObservedObject private var demoMode = DemoMode.shared
 
     @State private var pane = Pane.remote
 
     /// Whether a reader card is present and the PIN pane should be shown.
     private var readerCardIsPresent: Bool {
-      cardPresence.isReaderCardPresent
+      demoMode.isActive ? demoMode.isReaderCardPresent : cardPresence.isReaderCardPresent
     }
 
     internal var body: some View {
