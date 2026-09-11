@@ -31,6 +31,7 @@
     internal let model = LoginIdentityModel.shared
     @ObservedObject internal var retryHealth = CredentialRetryHealth.shared
     @ObservedObject internal var cardPresence = CardPresence.shared
+    @ObservedObject private var demoMode = DemoMode.shared
     internal let remoteRegistry = PersistentTokenRegistry.shared
     @State private var signing = SignDocumentModel()
 
@@ -88,6 +89,9 @@
           Spacer()
         }
         statusForm
+        if demoMode.isActive {
+          CardSetupFooter(isDemonstration: true)
+        }
       }
       .padding(Self.padding)
       .frame(minWidth: minimumWidth, alignment: .leading)
@@ -100,6 +104,18 @@
       .onChange(of: availability) { _, now in
         react(to: now)
         observeActivation()
+      }
+      .onChange(of: demoMode.isActive) { _, active in
+        if active {
+          react(to: availability)
+          observeActivation()
+          seedVirtualRequestIfNeeded()
+        }
+      }
+      .onChange(of: demoMode.revision) { _, _ in
+        react(to: availability)
+        observeActivation()
+        seedVirtualRequestIfNeeded()
       }
       .onChange(of: offeringNumber || awaitingAccessNumber) { _, _ in
         observeActivation()
@@ -170,21 +186,13 @@
       outcomeSection
     }
 
-    @ViewBuilder private var readingSection: some View {
-      LabeledContent("Person") {
-        IdentityStateView(availability: .cardWithoutIdentity, warnsUnavailableCard: false)
-      }
-      .accessibilityIdentifier("loginIdentityStatus")
-    }
-
-    @ViewBuilder private var pairingPromptSection: some View {
-      RemotePairingPromptView()
-    }
-
     private func handleAppear() {
       model.refresh()
       react(to: availability)
       observeActivation()
+      if demoMode.isActive {
+        seedVirtualRequestIfNeeded()
+      }
       #if DEBUG
         let targets = DebugSampleDocuments.targetDocuments()
         if !targets.isEmpty, signing.queued.isEmpty {
@@ -193,6 +201,15 @@
           _ = accept(DebugSampleDocuments.seeded())
         }
       #endif
+    }
+
+    private func seedVirtualRequestIfNeeded() {
+      guard DemoMode.shared.isActive,
+        DemoMode.shared.state.device.pendingSigningRequest,
+        signing.queued.isEmpty,
+        signing.pending == nil
+      else { return }
+      _ = accept([Self.demoDocumentURL()])
     }
 
     private func observeActivation() {

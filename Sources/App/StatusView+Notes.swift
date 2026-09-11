@@ -4,6 +4,7 @@
 
   import CardCore
   import Foundation
+  import SwiftUI
 
   /// The two questions the window asks about text rather than about the
   /// card: what to say while it is busy, and whether an entry could yet
@@ -19,7 +20,10 @@
     /// does. Here rather than in the view body only for the view
     /// type's length; it reads shared state, no private field.
     internal var availability: LoginIdentityModel.Availability {
-      LoginIdentityModel.resolved(
+      if DemoMode.shared.isActive {
+        return DemoMode.shared.state.card.cardPresent ? .ready : .noCard
+      }
+      return LoginIdentityModel.resolved(
         tokenPublished: model.isReady,
         cardPresent: cardPresence.isCardPresent,
         holderAdvertising: holderIsAdvertising,
@@ -38,7 +42,8 @@
 
     /// Whether to prompt the user to connect a card reader or phone.
     internal var shouldShowPairingPrompt: Bool {
-      !cardPresence.isReaderCardPresent
+      !DemoMode.shared.isActive
+        && !cardPresence.isReaderCardPresent
         && !holderIsAdvertising
         && availability == .noCard
         && signingModel.pending == nil
@@ -54,6 +59,17 @@
     /// Whether this window collects PIN 2, or the paired phone does.
     internal var asksLocalPin2: Bool {
       !DocumentSigner.usesRappSigning
+    }
+
+    @ViewBuilder internal var readingSection: some View {
+      LabeledContent("Person") {
+        IdentityStateView(availability: .cardWithoutIdentity, warnsUnavailableCard: false)
+      }
+      .accessibilityIdentifier("loginIdentityStatus")
+    }
+
+    @ViewBuilder internal var pairingPromptSection: some View {
+      RemotePairingPromptView()
     }
 
     /// The signature style every dropped document can take.
@@ -101,6 +117,17 @@
     /// Whether an entry could be a PIN2 at all.
     internal static func isEntryComplete(_ entry: String) -> Bool {
       (Pin2.minimumDigitCount...Pin2.maximumDigitCount).contains(entry.count)
+    }
+
+    /// Creates or returns the demonstration PDF document URL.
+    internal static func demoDocumentURL() -> URL {
+      let tempDir = FileManager.default.temporaryDirectory
+      let demoDocURL = tempDir.appendingPathComponent("Review document.pdf")
+      if !FileManager.default.fileExists(atPath: demoDocURL.path) {
+        let pdfData = Data("%PDF-1.4\n% Virtual demonstration document\n%%EOF".utf8)
+        try? pdfData.write(to: demoDocURL, options: .atomic)
+      }
+      return demoDocURL
     }
   }
 

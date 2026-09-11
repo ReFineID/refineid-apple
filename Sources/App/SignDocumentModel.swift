@@ -280,6 +280,15 @@
       }
       let appearance = beginSigning()
       defer { working = false }
+      if DemoMode.shared.isActive {
+        await signWithVirtualCard(
+          pin2: pin2,
+          from: source,
+          to: destination,
+          appearance: appearance
+        )
+        return
+      }
       do {
         switch format {
         case .asice:
@@ -294,57 +303,6 @@
       } catch {
         report(error, from: appearance)
       }
-    }
-
-    /// One PAdES signature, with the optional visible stamp.
-    private func signPdf(
-      _ source: URL,
-      pin2: String,
-      accessNumber: String,
-      to destination: URL
-    ) async throws {
-      let stampStyle = DocumentStampStyle.load()
-      // The card is read for the mark here, where the holder has
-      // asked for a signature - not while they were still typing the
-      // number that unlocks it.
-      await readStamp(accessNumber: accessNumber, style: stampStyle)
-      let document = try Data(contentsOf: source)
-      let signedAt = Date()
-      let visibleStamp = try await self.signedVisibleStamp(
-        on: document,
-        source: source,
-        pin2: pin2,
-        at: signedAt,
-        style: stampStyle
-      )
-      #if DEBUG
-        let reason =
-          DebugRevokedDocumentSigning.isEnabled()
-          ? DebugRevokedDocumentSigning.reason : nil
-      #else
-        let reason: String? = nil
-      #endif
-      let pdfClaim = PdfIncrementalSigner.SignatureClaim(
-        signedAt: signedAt,
-        reason: reason,
-        location: nil
-      )
-      let result = try await DocumentSigner.sign(
-        document,
-        claim: pdfClaim,
-        stamp: visibleStamp,
-        access: DocumentSigner.SigningAccess(
-          pin2: pin2,
-          transport: .reader,
-          cardAccessNumber: nil
-        )
-      )
-      try result.bytes.write(to: destination, options: .atomic)
-      #if DEBUG
-        if result.completion == .revokedSignerTest {
-          notice = DebugRevokedDocumentSigning.warning
-        }
-      #endif
     }
 
     /// Records a completed write and releases the card identity state.
@@ -371,6 +329,11 @@
       failure = nil
       stampState = nil
       stampFailure = nil
+    }
+
+    /// Sets the informational notice for the current document.
+    internal func setNotice(_ value: String?) {
+      notice = value
     }
   }
 

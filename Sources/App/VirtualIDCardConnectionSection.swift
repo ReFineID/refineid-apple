@@ -1,6 +1,6 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
   import CardCore
   import SwiftUI
@@ -67,7 +67,9 @@
           text: $draft.card.cardAccessNumber,
           axis: .vertical
         )
-        .keyboardType(.numberPad)
+        #if os(iOS)
+          .keyboardType(.numberPad)
+        #endif
         .virtualCardEditorField()
         .padding(.leading, 1)
         .accessibilityIdentifier("virtualCardCAN")

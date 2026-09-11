@@ -53,6 +53,15 @@
       }
       let appearance = beginSigning()
       defer { endSigning() }
+      if DemoMode.shared.isActive, let first = sources.first {
+        await signWithVirtualCard(
+          pin2: pin2,
+          from: first,
+          to: destination,
+          appearance: appearance
+        )
+        return
+      }
       do {
         try await signContainer(sources, pin2: pin2, to: destination)
         complete(with: destination)

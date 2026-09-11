@@ -140,6 +140,17 @@
         return
       }
 
+      if DemoMode.shared.isActive {
+        if DemoMode.shared.state.card.cardPresent, DemoMode.shared.activationNeeds.any {
+          state = .awaitsActivation
+          startManagementRefreshIfNeeded()
+        } else {
+          stopManagementRefresh()
+          state = .idle
+        }
+        return
+      }
+
       if !activationTokenIDs.isEmpty {
         state = .awaitsActivation
         startManagementRefreshIfNeeded()

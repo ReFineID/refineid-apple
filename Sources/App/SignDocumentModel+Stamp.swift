@@ -77,6 +77,57 @@
         signerCertificate: state.signerCertificate
       )
     }
+
+    /// One PAdES signature, with the optional visible stamp.
+    internal func signPdf(
+      _ source: URL,
+      pin2: String,
+      accessNumber: String,
+      to destination: URL
+    ) async throws {
+      let stampStyle = DocumentStampStyle.load()
+      // The card is read for the mark here, where the holder has
+      // asked for a signature - not while they were still typing the
+      // number that unlocks it.
+      await readStamp(accessNumber: accessNumber, style: stampStyle)
+      let document = try Data(contentsOf: source)
+      let signedAt = Date()
+      let visibleStamp = try await self.signedVisibleStamp(
+        on: document,
+        source: source,
+        pin2: pin2,
+        at: signedAt,
+        style: stampStyle
+      )
+      #if DEBUG
+        let reason =
+          DebugRevokedDocumentSigning.isEnabled()
+          ? DebugRevokedDocumentSigning.reason : nil
+      #else
+        let reason: String? = nil
+      #endif
+      let pdfClaim = PdfIncrementalSigner.SignatureClaim(
+        signedAt: signedAt,
+        reason: reason,
+        location: nil
+      )
+      let result = try await DocumentSigner.sign(
+        document,
+        claim: pdfClaim,
+        stamp: visibleStamp,
+        access: DocumentSigner.SigningAccess(
+          pin2: pin2,
+          transport: .reader,
+          cardAccessNumber: nil
+        )
+      )
+      try result.bytes.write(to: destination, options: .atomic)
+      #if DEBUG
+        if result.completion == .revokedSignerTest {
+          setNotice(DebugRevokedDocumentSigning.warning)
+        }
+      #endif
+    }
   }
 
 #endif

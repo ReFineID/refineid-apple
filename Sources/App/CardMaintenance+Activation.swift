@@ -29,11 +29,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> ActivationExecution? {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.activateCard(request: request)
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.activateCard(request: request)
+    }
     return await onCard(
       transport: transport,
       cardAccessNumber: cardAccessNumber,
