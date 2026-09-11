@@ -26,7 +26,7 @@
     /// inside it so a larger size widens the window instead of
     /// wrapping every label in it.
     @ScaledMetric(relativeTo: .body)
-    private var minimumWidth: CGFloat = 520
+    private var minimumWidth: CGFloat = 560
 
     internal let model = LoginIdentityModel.shared
     @ObservedObject internal var retryHealth = CredentialRetryHealth.shared
