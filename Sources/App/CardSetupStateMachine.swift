@@ -1,5 +1,4 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
-// SPDX-License-Identifier: EUPL-1.2
 
 import Foundation
 
