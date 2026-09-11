@@ -26,6 +26,14 @@
   cheap backup; Mac, the connected iPhone or iPad, and the iPad
   simulator must match it. Do not mix the stamp `Version.xcconfig`
   rewrite into the feature commit.
+- Apple deployment goes only through the `Scripts/` entry points:
+  device installs via `Scripts/install-ios-development.sh`, store and
+  TestFlight work via `Scripts/apple-app-store-connect-release-manager.swift`
+  (Swift). Never sign, archive, or export with raw `xcodebuild`, Xcode
+  Organizer, or a handwritten sequence, and never pass `DEVELOPMENT_TEAM`
+  on the `xcodebuild` command line: the override breaks automatic signing
+  and fails with `No Account for Team` even when the certificates are
+  on the Mac.
 - Push when feature is ready.
 - Reusable agent workflows are plain scripts under `Scripts/`, each with a
   usage header, so any agent of any vendor can discover and run them. Keep
