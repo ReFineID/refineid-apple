@@ -1,11 +1,15 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
   import CardCore
   import Foundation
   import SwiftUI
-  import UIKit
+  #if os(iOS)
+    import UIKit
+  #elseif os(macOS)
+    import AppKit
+  #endif
 
   /// Process-scoped demonstration and UI-test environment.
   ///
@@ -22,8 +26,12 @@
 
     /// A demonstration fakes the antenna, never the device class: only
     /// an iPhone is offered near-field states.
-    internal static let offersNearField =
-      UIDevice.current.userInterfaceIdiom == .phone
+    #if os(iOS)
+      internal static let offersNearField =
+        UIDevice.current.userInterfaceIdiom == .phone
+    #else
+      internal static let offersNearField = false
+    #endif
 
     // MARK: Static Computed Properties
 
@@ -101,6 +109,13 @@
       isActive = true
       state = scenario.snapshot
       card = VirtualIDCard(snapshot: state)
+      publishState()
+    }
+
+    internal func deactivate() {
+      isActive = false
+      state = Self.defaultScenario.snapshot
+      card = VirtualIDCard(scenario: Self.defaultScenario)
       publishState()
     }
 

@@ -22,6 +22,7 @@
     private enum TrackKey: Equatable {
       case availability(LoginIdentityModel.Availability)
       case ready(generation: Int, borrowed: String?)
+      case demo(revision: Int, cardPresent: Bool)
     }
 
     #if DEBUG
@@ -72,12 +73,18 @@
 
     /// The event which can change the row's asynchronous contents.
     private var trackKey: TrackKey {
+      if DemoMode.shared.isActive {
+        return .demo(
+          revision: DemoMode.shared.revision,
+          cardPresent: DemoMode.shared.state.card.cardPresent
+        )
+      }
       switch availability {
       case .ready:
-        .ready(generation: model.generation, borrowed: borrowedHolderLine)
+        return .ready(generation: model.generation, borrowed: borrowedHolderLine)
 
       case .cardWithoutIdentity, .noCard:
-        .availability(availability)
+        return .availability(availability)
       }
     }
 
@@ -149,6 +156,10 @@
       #endif
       switch availability {
       case .ready:
+        if DemoMode.shared.isActive {
+          holder = DemoMode.shared.state.card.cardPresent ? DemoMode.shared.holderName : nil
+          return
+        }
         if let borrowed = borrowedHolderLine {
           holder = borrowed
           return

@@ -27,11 +27,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> Snapshot? {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.maintenanceSnapshot()
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.maintenanceSnapshot()
+    }
     return await onCard(
       transport: transport,
       cardAccessNumber: cardAccessNumber,
@@ -50,11 +48,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> CredentialProbeReport? {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.credentialReport()
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.credentialReport()
+    }
     return await onCard(
       transport: transport,
       cardAccessNumber: cardAccessNumber,
@@ -72,11 +68,9 @@ extension CardMaintenance {
   /// documented card whose ATR is not in the generation table, still
   /// without reading any retry counter.
   internal static func readerActivationScheme() async -> ActivationScheme? {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.readerActivationScheme()
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.readerActivationScheme()
+    }
     guard let manager = TKSmartCardSlotManager.default else { return nil }
     let occupied = await CardSlotSearch.allOccupied(in: manager).filter { candidate in
       CardTransport.transport(forSlotNamed: candidate.name) == .reader
@@ -103,11 +97,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.changePIN1(current: current, new: new)
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.changePIN1(current: current, new: new)
+    }
     return await withFloor(
       CredentialFloor(role: .pin1, confirming: .pin1),
       transport: transport,
@@ -138,11 +130,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.changePIN2(current: current, new: new)
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.changePIN2(current: current, new: new)
+    }
     return await withFloor(
       CredentialFloor(role: .pin2, confirming: .pin2),
       transport: transport,
@@ -173,11 +163,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.resetPIN1(puk: puk, new: new)
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.resetPIN1(puk: puk, new: new)
+    }
     return await withFloor(
       CredentialFloor(role: .puk, confirming: .pin1),
       transport: transport,
@@ -205,11 +193,9 @@ extension CardMaintenance {
     transport: Transport,
     cardAccessNumber: String?
   ) async -> MutationReport {
-    #if os(iOS)
-      if await DemoMode.shared.isActive {
-        return await DemoMode.shared.resetPIN2(puk: puk, new: new)
-      }
-    #endif
+    if await DemoMode.shared.isActive {
+      return await DemoMode.shared.resetPIN2(puk: puk, new: new)
+    }
     return await withFloor(
       CredentialFloor(role: .puk, confirming: .pin2),
       transport: transport,

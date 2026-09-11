@@ -29,6 +29,9 @@ internal struct ReFineIDApp: App {
     private enum StatusLayout {
       static let windowWidth: CGFloat = 720
       static let windowHeight: CGFloat = 520
+      static let overlayPadding: CGFloat = 20
+      static let editorMinWidth: CGFloat = 500
+      static let editorMinHeight: CGFloat = 600
     }
   #endif
 
@@ -44,8 +47,6 @@ internal struct ReFineIDApp: App {
     }
   #endif
 
-  private static var pairingsChangeObserver: (any NSObjectProtocol)?
-
   #if os(iOS)
     /// Catches the Home Screen action that starts a demonstration.
     ///
@@ -54,8 +55,10 @@ internal struct ReFineIDApp: App {
     /// in ``DemoModeShortcut``.
     @UIApplicationDelegateAdaptor(DemoModeAppDelegate.self)
     private var demoModeDelegate
-    @State private var showsVirtualCardEditor = false
   #endif
+
+  @ObservedObject private var demoMode = DemoMode.shared
+  @State private var showsVirtualCardEditor = false
 
   internal var body: some Scene {
     #if os(macOS)
@@ -74,6 +77,16 @@ internal struct ReFineIDApp: App {
           Button("About RefineID") {
             ProductSite.presentAboutPanel()
           }
+          Divider()
+          Button(demoMode.isActive ? "Exit Demo Mode" : "Demo Mode…") {
+            if demoMode.isActive {
+              demoMode.deactivate()
+            } else {
+              demoMode.activate(scenario: DemoMode.defaultScenario)
+              demoMode.setEditorPresented(true)
+            }
+          }
+          .keyboardShortcut("d", modifiers: [.command, .option])
         }
         CommandGroup(replacing: .help) {
           // Intentionally empty: no help item, so no Help menu.
@@ -153,15 +166,47 @@ internal struct ReFineIDApp: App {
   /// The screen a holder actually came here for.
   @ViewBuilder private var holderContent: some View {
     #if os(macOS)
-      StatusView()
-    #else
       ZStack(alignment: .bottomTrailing) {
-        ReaderIdentityRootView()
-        if DemoMode.shared.isActive,
+        StatusView()
+        if demoMode.isActive,
           !ProcessInfo.processInfo.arguments.contains("--hide-diagnostics")
         {
           VirtualIDCardOverlay {
-            DemoMode.shared.setEditorPresented(true)
+            demoMode.setEditorPresented(true)
+            showsVirtualCardEditor = true
+          }
+          .fixedSize()
+          .padding(StatusLayout.overlayPadding)
+        }
+      }
+      .sheet(
+        isPresented: $showsVirtualCardEditor,
+        onDismiss: {
+          demoMode.setEditorPresented(false)
+          NotificationCenter.default.post(
+            name: VirtualIDCardOverlayNotification.editorDidDismiss,
+            object: nil)
+        },
+        content: {
+          VirtualIDCardEditor(demoMode: demoMode) {
+            showsVirtualCardEditor = false
+          }
+          .frame(
+            minWidth: StatusLayout.editorMinWidth,
+            minHeight: StatusLayout.editorMinHeight)
+        }
+      )
+      .onChange(of: demoMode.isEditorPresented) { _, presented in
+        showsVirtualCardEditor = presented
+      }
+    #else
+      ZStack(alignment: .bottomTrailing) {
+        ReaderIdentityRootView()
+        if demoMode.isActive,
+          !ProcessInfo.processInfo.arguments.contains("--hide-diagnostics")
+        {
+          VirtualIDCardOverlay {
+            demoMode.setEditorPresented(true)
             showsVirtualCardEditor = true
           }
           // Keep the overlay's hit-test surface on the floating control;
@@ -175,17 +220,20 @@ internal struct ReFineIDApp: App {
       .fullScreenCover(
         isPresented: $showsVirtualCardEditor,
         onDismiss: {
-          DemoMode.shared.setEditorPresented(false)
+          demoMode.setEditorPresented(false)
           NotificationCenter.default.post(
             name: VirtualIDCardOverlayNotification.editorDidDismiss,
             object: nil)
         },
         content: {
-          VirtualIDCardEditor(demoMode: DemoMode.shared) {
+          VirtualIDCardEditor(demoMode: demoMode) {
             showsVirtualCardEditor = false
           }
         }
       )
+      .onChange(of: demoMode.isEditorPresented) { _, presented in
+        showsVirtualCardEditor = presented
+      }
     #endif
   }
 
@@ -252,68 +300,19 @@ internal struct ReFineIDApp: App {
       DebugLaunchModes.runBeforeScene()
     #endif
 
-    #if os(iOS) && DEBUG
+    #if DEBUG
       let args = ProcessInfo.processInfo.arguments
-      if args.contains("--prime-mock-card") || args.contains("--prime-fake-card") {
-        MockCardCertificate.primeSyntheticIdentity()
-      }
-      if let pin2Index = args.firstIndex(of: "--pin2"),
-        args.indices.contains(pin2Index + 1)
-      {
-        CardCredentialStore.save(pin2: args[pin2Index + 1])
-      }
+      #if os(iOS)
+        if args.contains("--prime-mock-card") || args.contains("--prime-fake-card") {
+          MockCardCertificate.primeSyntheticIdentity()
+        }
+        if let pin2Index = args.firstIndex(of: "--pin2"),
+          args.indices.contains(pin2Index + 1)
+        {
+          CardCredentialStore.save(pin2: args[pin2Index + 1])
+        }
+      #endif
       DemoMode.shared.activateFromLaunchArguments()
     #endif
   }
-
-  #if os(macOS)
-    private static func configurePlatformDefaults() {
-      SingleInstance.enforce()
-      UserDefaults.standard.set(
-        true, forKey: "NSDisabledCharacterPaletteMenuItem"
-      )
-      UserDefaults.standard.set(
-        true, forKey: "NSDisabledDictationMenuItem"
-      )
-      UserDefaults.standard.set(
-        false, forKey: "NSFullScreenMenuItemEverywhere"
-      )
-      MainMenuPruner.start()
-    }
-  #endif
-
-  private static func startRemoteServices() {
-    guard !TestCredentialEnvironment.isTestMode else { return }
-
-    #if REFINEID_LOCAL_CARD && os(iOS)
-      HolderCardServing.availabilityChanged()
-      PhonePersistentTokenRelay.shared.start()
-      if !SupportedCardTransports.offersNearField {
-        PersistentTokenRegistry.shared.start()
-      }
-    #else
-      PersistentTokenRegistry.shared.start()
-    #endif
-    RappAutoPairingService.shared.start()
-
-    pairingsChangeObserver = NotificationCenter.default.addObserver(
-      forName: Notification.Name("fi.refineid.pairingsDidChange"),
-      object: nil,
-      queue: .main
-    ) { _ in
-      MainActor.assumeIsolated {
-        #if os(macOS)
-          PersistentTokenRegistry.shared.startAfterPairing()
-        #elseif os(iOS) && REFINEID_LOCAL_CARD
-          if let ids = try? RappDeviceVault().activePairIDs(), !ids.isEmpty {
-            PhonePersistentTokenRelay.shared.resumeAfterUserAction()
-          }
-          if !SupportedCardTransports.offersNearField {
-            PersistentTokenRegistry.shared.startAfterPairing()
-          }
-        #endif
-      }
-    }
-  }
-
 }

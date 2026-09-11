@@ -1,10 +1,14 @@
 // Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 
   import CardCore
   import SwiftUI
-  import UIKit
+  #if os(iOS)
+    import UIKit
+  #elseif os(macOS)
+    import AppKit
+  #endif
 
   /// Floating access to the editable card while a demonstration is active.
   internal struct VirtualIDCardOverlay: View {
@@ -70,11 +74,15 @@
         // input. End that responder session before presenting the editor;
         // otherwise UIKit can restore a detached text input when the sheet
         // closes, making the visible field ignore both touch and VoiceOver.
-        UIApplication.shared.sendAction(
-          #selector(UIResponder.resignFirstResponder),
-          to: nil,
-          from: nil,
-          for: nil)
+        #if os(iOS)
+          UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil)
+        #elseif os(macOS)
+          NSApp.keyWindow?.makeFirstResponder(nil)
+        #endif
         openEditor()
       } label: {
         Label(

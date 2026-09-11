@@ -51,21 +51,36 @@ internal struct CardSetupFooter: View {
   /// keeps the standing warning above the text contrast floor in every
   /// appearance without relying on colour as its only signal.
   @ViewBuilder private var demonstration: some View {
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
       if !ProcessInfo.processInfo.arguments.contains("--hide-diagnostics") {
-        Text("DEMO MODE")
-          .font(.headline)
-          .foregroundStyle(.white)
-          .accessibilityIdentifier("demoModeNotice")
-          .padding(.vertical, Self.verticalPadding)
-          .frame(maxWidth: .infinity)
-          .background(
-            Color(
-              red: Self.demoBackgroundRedComponent,
-              green: Self.demoBackgroundGreenComponent,
-              blue: Self.demoBackgroundBlueComponent
-            ),
-            ignoresSafeAreaEdges: .bottom)
+        #if os(iOS)
+          Text("DEMO MODE")
+            .font(.headline)
+            .foregroundStyle(.white)
+            .accessibilityIdentifier("demoModeNotice")
+            .padding(.vertical, Self.verticalPadding)
+            .frame(maxWidth: .infinity)
+            .background(
+              Color(
+                red: Self.demoBackgroundRedComponent,
+                green: Self.demoBackgroundGreenComponent,
+                blue: Self.demoBackgroundBlueComponent
+              ),
+              ignoresSafeAreaEdges: .bottom)
+        #else
+          Text("DEMO MODE")
+            .font(.headline)
+            .foregroundStyle(.white)
+            .accessibilityIdentifier("demoModeNotice")
+            .padding(.vertical, Self.verticalPadding)
+            .frame(maxWidth: .infinity)
+            .background(
+              Color(
+                red: Self.demoBackgroundRedComponent,
+                green: Self.demoBackgroundGreenComponent,
+                blue: Self.demoBackgroundBlueComponent
+              ))
+        #endif
       }
     #endif
   }
