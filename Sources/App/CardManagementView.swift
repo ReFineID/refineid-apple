@@ -62,22 +62,18 @@ internal struct CardManagementView: View {
   // MARK: Computed Properties
 
   private var readerCardIsPresent: Bool {
-    #if os(iOS)
-      if DemoMode.shared.isActive {
-        return DemoMode.shared.isReaderCardPresent
-      }
-    #endif
+    if DemoMode.shared.isActive {
+      return DemoMode.shared.isReaderCardPresent
+    }
     return cardPresence.hasCompletedInitialScan
       ? cardPresence.isReaderCardPresent
       : startsWithReaderCard
   }
 
   private var readerCardIsReady: Bool {
-    #if os(iOS)
-      if DemoMode.shared.isActive {
-        return DemoMode.shared.isReaderCardPresent
-      }
-    #endif
+    if DemoMode.shared.isActive {
+      return DemoMode.shared.isReaderCardPresent
+    }
     return cardPresence.hasCompletedInitialScan && cardPresence.isReaderCardReady
   }
 

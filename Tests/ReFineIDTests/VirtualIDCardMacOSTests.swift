@@ -208,6 +208,37 @@
       let title = virtualCardLocalized("title", defaultValue: "Virtual ID Card")
       #expect(title == "Virtual ID Card")
     }
+
+    @Test
+    @MainActor
+    internal func virtualCardSettingsAndManagementIntegration() async {
+      let demo = DemoMode.shared
+      demo.activate(scenario: .activatedReader)
+      defer { demo.deactivate() }
+
+      let management = CardManagementModel(
+        transport: .reader,
+        activationRequired: false,
+        cardAccessNumber: nil,
+        activationScheme: nil,
+        activationNeeds: nil
+      )
+      await management.refresh()
+      #expect(management.report != nil)
+      if let report = management.report {
+        guard let five = RetryCount(attemptsRemaining: 5) else {
+          Issue.record("RetryCount failed to initialize")
+          return
+        }
+        #expect(report.pin1 == .remaining(five))
+        #expect(report.pin2 == .remaining(five))
+      }
+
+      // Test changing PIN 1 through the management model
+      let changed = await management.changePin1(current: "1234", new: "4321")
+      #expect(changed == true)
+      #expect(demo.state.card.pin1.value == "4321")
+    }
   }
 
 #endif
