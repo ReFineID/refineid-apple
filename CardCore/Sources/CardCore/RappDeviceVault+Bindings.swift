@@ -64,6 +64,15 @@
       }
     }
 
+    /// Rust-core binding for ``removeRequester(pairID:operationID:)``.
+    public func removeRequester(pairId: Data, operationId: Data) throws {
+      do {
+        try removeRequester(pairID: pairId, operationID: operationId)
+      } catch {
+        throw rappVaultError(error)
+      }
+    }
+
     /// Rust-core binding for ``persistProxy(pairID:operationID:record:)``.
     public func persistProxy(
       pairId: Data,

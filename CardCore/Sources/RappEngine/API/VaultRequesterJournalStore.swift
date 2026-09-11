@@ -18,4 +18,8 @@ internal struct VaultRequesterJournalStore: RequesterJournalStore {
       operationId: record.operationIdentifier,
       record: try record.encoded())
   }
+
+  internal mutating func remove(operationIdentifier: Data) throws {
+    try vault.removeRequester(pairId: pairIdentifier, operationId: operationIdentifier)
+  }
 }

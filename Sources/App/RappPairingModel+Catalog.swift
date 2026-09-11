@@ -30,6 +30,7 @@ extension RappPairingModel {
     }
     try? vault.clearSelectedPair()
     RappPairNames.forgetAll()
+    _ = try? vault.deleteServiceNamespace(RappDeviceVault.serviceNamespace)
     NotificationCenter.default.post(name: pairingsDidChangeNotification, object: nil)
   }
 

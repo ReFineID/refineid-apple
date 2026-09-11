@@ -13,6 +13,9 @@ public protocol RappOperationVault: AnyObject, Sendable {
   /// Reads every requester record stored for the pairing.
   func loadRequester(pairId: Data) throws -> [Data]
 
+  /// Deletes one requester record; absent is not an error.
+  func removeRequester(pairId: Data, operationId: Data) throws
+
   /// Writes a proxy record.
   func persistProxy(pairId: Data, operationId: Data, record: Data) throws
 

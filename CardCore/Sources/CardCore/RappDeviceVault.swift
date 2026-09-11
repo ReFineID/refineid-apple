@@ -80,6 +80,10 @@ public final class RappDeviceVault: @unchecked Sendable {
     internal static let noRetainedResult = Data("ReFineID:RAPP:no-retained-result:v1".utf8)
   }
 
+  /// The keychain service namespace holding pairs, journals, selection,
+  /// and device identity.
+  public static let serviceNamespace = "fi.refineid.rapp"
+
   internal let accessGroup: String?
   internal let namespace: Namespace
   private let lock = NSLock()
@@ -89,7 +93,7 @@ public final class RappDeviceVault: @unchecked Sendable {
 
   /// Opens the production vault, optionally shared via an access group.
   public convenience init(accessGroup: String? = nil) {
-    self.init(accessGroup: accessGroup, servicePrefix: "fi.refineid.rapp")
+    self.init(accessGroup: accessGroup, servicePrefix: Self.serviceNamespace)
   }
 
   /// Isolates deterministic integration tests from production and from each
@@ -120,6 +124,7 @@ public final class RappDeviceVault: @unchecked Sendable {
     item[kSecAttrGeneric as String] = marker
     item[kSecValueData as String] = record
     inMemoryStore[namespace.pair, default: [:]][pairID.hexadecimal] = item
+    if TestCredentialEnvironment.isTestMode { return }
     let status = SecItemAdd(item as CFDictionary, nil)
     #if DEBUG
       print("[RappDeviceVault] insertPair status: \(status)")

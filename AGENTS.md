@@ -7,15 +7,19 @@
 - Never log, trace, display, or format PIN bytes, candidate PIN lengths (e.g. `\(pin.count)`), or development PIN role identifiers in log sinks, audit records, test attachments, or error strings.
 - Never commit test PINs or card secrets.
 
+# Rule #3 – Comments describe the code, never its history
+- Comments state what the code does or the constraint it honors, never why it changed. A past bug, a deprecation, or the reasoning for a fix belongs in the git commit message, not the source.
+
+# Rule #4 – Everything the software stores in the keychain lives under `fi.refineid`
+- Every keychain service the software creates starts with `fi.refineid`. That prefix is the whole deletable namespace: wiping it forgets every card number, pairing, and credential the app holds, and nothing else.
+- That namespace holds software-generated state only. Anything owned by a human stays outside it, so no cleanup can reach it.
+
 - Please No AI attribution spam in commits.
   No `Co-authored-by` / `Signed-off-by` / `Reviewed-by`
   or any AI-naming trailer; subject + body only. 
 - Apple uses PascalCase.
 - ASCII only in source, UTF-8 only where required.
-- No Magic Codes - define everything.   
-- Comments describe what the code does or the constraint it honors,
-  never why it changed. A past bug, a deprecation, the reasoning for a
-  fix belongs in the git commit message, not the source.
+- No Magic Codes - define everything.
 - Commit often when compiles and lint is clean.
 - After a feature commit, install that build on every machine that
   can run it: `Scripts/install-all-devices.sh`. The commit is the

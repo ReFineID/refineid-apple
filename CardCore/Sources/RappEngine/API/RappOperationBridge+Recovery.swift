@@ -62,6 +62,11 @@ extension RappOperationBridge {
   /// The classification is the session-closure one: a crash closed the
   /// session, so an uncommitted record cancels, a committed one becomes
   /// ambiguous, and an unacknowledged result becomes delivery-uncertain.
+  ///
+  /// Recovery removes the stored copy of a terminal record while still
+  /// returning it for in-session annotation. Only ambiguous and
+  /// delivery-uncertain records stay stored, awaiting the reconciliation
+  /// that removes them too.
   internal static func recoveredRequesterRecords(
     vault: RappOperationVault, pairIdentifier: Data
   ) throws -> [RequesterJournalRecord] {
@@ -73,33 +78,50 @@ extension RappOperationBridge {
     }
     var store = VaultRequesterJournalStore(vault: vault, pairIdentifier: pairIdentifier)
     return try stored.map { bytes in
-      var record: RequesterJournalRecord
+      let record: RequesterJournalRecord
       do {
         record = try RequesterJournalRecord.decode(bytes)
       } catch {
         throw RappBindingError.LocalStateFailure
       }
-      let terminal: OperationState
-      switch record.state {
-      case .requested, .awaitingConsent, .prepared:
-        terminal = .cancelled
-
-      case .committed, .executing:
-        terminal = .ambiguous
-
-      case .resultPending:
-        terminal = .deliveryUncertain
-
-      default:
-        return record
-      }
-      record.state = terminal
+      let recovered = Self.recoverRequesterRecord(record)
       do {
-        try store.persist(record)
+        if recovered.keepStored {
+          try store.persist(recovered.record)
+        } else {
+          try store.remove(operationIdentifier: recovered.record.operationIdentifier)
+        }
       } catch {
         throw RappBindingError.LocalStateFailure
       }
-      return record
+      return recovered.record
+    }
+  }
+
+  /// Resolves one stored requester record to its terminal state and reports
+  /// whether its stored copy stays for reconciliation.
+  private static func recoverRequesterRecord(_ record: RequesterJournalRecord) -> (
+    record: RequesterJournalRecord, keepStored: Bool
+  ) {
+    var resolved = record
+    switch resolved.state {
+    case .requested, .awaitingConsent, .prepared:
+      resolved.state = .cancelled
+      return (resolved, false)
+
+    case .committed, .executing:
+      resolved.state = .ambiguous
+      return (resolved, true)
+
+    case .resultPending:
+      resolved.state = .deliveryUncertain
+      return (resolved, true)
+
+    case .ambiguous, .deliveryUncertain:
+      return (resolved, resolved.reconciliation == nil)
+
+    default:
+      return (resolved, false)
     }
   }
 }

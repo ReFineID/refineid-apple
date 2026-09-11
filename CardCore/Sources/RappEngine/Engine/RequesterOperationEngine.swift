@@ -155,7 +155,11 @@ internal struct RequesterOperationEngine {
       }
       recovered[index].reconciliation = report
       do {
-        try store.persist(recovered[index])
+        if recovered[index].state.isTerminal {
+          try store.remove(operationIdentifier: operationIdentifier)
+        } else {
+          try store.persist(recovered[index])
+        }
       } catch {
         throw EngineError.persistence
       }

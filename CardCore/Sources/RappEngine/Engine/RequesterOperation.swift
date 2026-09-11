@@ -93,7 +93,7 @@ internal struct RequesterOperation {
       CancelMessage(reference: reference, reason: reason))
     switch record.state {
     case .requested, .awaitingConsent, .prepared:
-      try persist(&store, state: .cancelled)
+      try forget(&store, state: .cancelled)
       return .terminal(message)
 
     case .committed, .executing, .resultPending:
@@ -111,7 +111,7 @@ internal struct RequesterOperation {
     try requireReference(cancellation.reference)
     switch record.state {
     case .requested, .awaitingConsent, .prepared:
-      try persist(&store, state: .cancelled)
+      try forget(&store, state: .cancelled)
       return .cancelled
 
     case .committed, .executing, .resultPending:
@@ -145,11 +145,13 @@ internal struct RequesterOperation {
     guard let terminal = result.status.failureState, let failure = result.error else {
       throw EngineError.localInvariantFailure
     }
-    try persist(&store, state: terminal)
+    try forget(&store, state: terminal)
     return .terminal(state: terminal, error: failure)
   }
 
   /// Records that the acknowledgement was delivered and releases the result.
+  ///
+  /// Completion removes the journal; only interrupted records stay stored.
   internal mutating func acknowledgementSent(
     to store: inout some RequesterJournalStore
   ) throws -> CardOperationResult {
@@ -159,7 +161,7 @@ internal struct RequesterOperation {
     }
     record.retainedResult = nil
     do {
-      try persist(&store, state: .completed)
+      try forget(&store, state: .completed)
     } catch {
       record.retainedResult = result
       throw error
@@ -186,11 +188,20 @@ internal struct RequesterOperation {
       guard record.state.isTerminal else { throw EngineError.invalidLocalTransition }
       return record.state
     }
-    try persist(&store, state: terminal)
+    switch terminal {
+    case .ambiguous, .deliveryUncertain:
+      try persist(&store, state: terminal)
+
+    default:
+      try forget(&store, state: terminal)
+    }
     return terminal
   }
 
   /// Stores an authenticated status report as a journal annotation.
+  ///
+  /// A terminal record keeps the annotation in memory only and is not
+  /// re-persisted.
   internal mutating func annotateStatus(
     _ report: StatusReport, to store: inout some RequesterJournalStore
   ) throws {
@@ -198,9 +209,30 @@ internal struct RequesterOperation {
       throw EngineError.authenticatedProtocolViolation(.referenceMismatch)
     }
     record.reconciliation = report
+    guard !record.state.isTerminal else {
+      try? store.remove(operationIdentifier: record.operationIdentifier)
+      return
+    }
     do {
       try store.persist(record)
     } catch {
+      throw EngineError.persistence
+    }
+  }
+
+  /// Moves to a terminal state while deleting the journal.
+  ///
+  /// A failed removal rolls the state back so recovery retries it.
+  private mutating func forget(
+    _ store: inout some RequesterJournalStore, state: OperationState
+  ) throws {
+    precondition(state.isTerminal)
+    let previous = record.state
+    record.state = state
+    do {
+      try store.remove(operationIdentifier: record.operationIdentifier)
+    } catch {
+      record.state = previous
       throw EngineError.persistence
     }
   }
