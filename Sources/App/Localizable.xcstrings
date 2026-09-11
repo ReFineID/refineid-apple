@@ -1965,6 +1965,22 @@
         }
       }
     },
+    "Edit Virtual Card…": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muokkaa virtuaalikorttia…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state" : "translated",
+            "value": "Redigera virtuellt kort…"
+          }
+        }
+      }
+    },
     "Exit Demo Mode": {
       "localizations": {
         "fi": {

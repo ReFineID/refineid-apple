@@ -7,14 +7,16 @@
 
   /// Edits one complete virtual card/device snapshot and one fault plan.
   internal struct VirtualIDCardEditor: View {
-    // MARK: Nested Types
-
-    /// The unchanging labels of one PIN/PUK credential row.
-    private struct CredentialFieldSpec {
-      let title: String
-      let identifier: String
-      let valueLabel: String
-      let attemptsLabel: String
+    private enum Layout {
+      #if os(macOS)
+        static let headerSubtitleSpacing: CGFloat = 3
+        static let headerHorizontalPadding: CGFloat = 24
+        static let headerTopPadding: CGFloat = 18
+        static let headerBottomPadding: CGFloat = 12
+        static let footerSpacing: CGFloat = 12
+        static let footerHorizontalPadding: CGFloat = 24
+        static let footerVerticalPadding: CGFloat = 14
+      #endif
     }
 
     // MARK: Static Computed Properties
@@ -25,9 +27,6 @@
         DemoMode.offersNearField || !scenario.usesNearField
       }
     }
-
-    private static let minimumAttempts = 0
-    internal static let menuLineSpacing: CGFloat = 2
 
     /// The faults a demonstration on this device class can offer.
     internal static var offeredFaultPresets: [VirtualIDCard.FaultPreset] {
@@ -60,17 +59,26 @@
     }
 
     @ViewBuilder private var scenarioMenu: some View {
-      Menu {
-        scenarioOptions
-      } label: {
-        scenarioMenuLabel
+      Picker(
+        virtualCardLocalized(
+          "scenario.preset",
+          defaultValue: "Preset"),
+        selection: $scenario
+      ) {
+        ForEach(Self.offeredScenarios, id: \.self) { candidate in
+          Text(candidate.localizedName)
+            .tag(candidate)
+            .accessibilityIdentifier(
+              "virtualCardScenarioOption.\(candidate.rawValue)")
+        }
       }
+      .pickerStyle(.menu)
       .tint(.primary)
       .onValueChange(of: scenario) { selected in
         draft = Self.deviceScoped(selected.snapshot)
         faultPreset = .noFault
       }
-      .pickerStyle(.menu)
+      .virtualCardMenuControl()
       .accessibilityIdentifier("virtualCardScenario")
       .accessibilityLabel(
         Text(
@@ -79,134 +87,139 @@
             defaultValue: "Virtual card scenario")))
     }
 
-    @ViewBuilder private var scenarioOptions: some View {
-      ForEach(Self.offeredScenarios, id: \.self) { candidate in
-        Button {
-          scenario = candidate
-        } label: {
-          if scenario == candidate {
-            Label(candidate.localizedName, systemImage: "checkmark")
-          } else {
-            Text(candidate.localizedName)
+    internal var body: some View {
+      #if os(macOS)
+        VStack(spacing: 0) {
+          headerView
+          Divider()
+          ScrollView {
+            Form {
+              scenarioSection
+              VirtualIDCardConnectionSection(draft: $draft)
+              VirtualIDCardIdentitySection(draft: $draft)
+              VirtualIDCardActivationSection(draft: $draft)
+              VirtualIDCardCredentialsSection(draft: $draft)
+              VirtualIDCardCertificatesSection(draft: $draft)
+              VirtualIDCardDeviceSection(draft: $draft)
+              VirtualIDCardFaultSection(faultPreset: $faultPreset)
+            }
+            .formStyle(.grouped)
+          }
+          Divider()
+          footerBar
+        }
+        .accessibilityIdentifier("virtualCardEditor")
+      #else
+        NavigationStack {
+          Form {
+            scenarioSection
+            VirtualIDCardConnectionSection(draft: $draft)
+            VirtualIDCardIdentitySection(draft: $draft)
+            VirtualIDCardActivationSection(draft: $draft)
+            VirtualIDCardCredentialsSection(draft: $draft)
+            VirtualIDCardCertificatesSection(draft: $draft)
+            VirtualIDCardDeviceSection(draft: $draft)
+            VirtualIDCardFaultSection(faultPreset: $faultPreset)
+          }
+          .headerProminence(.increased)
+          .navigationTitle(
+            virtualCardLocalized("title", defaultValue: "Virtual ID Card")
+          )
+          .accessibilityIdentifier("virtualCardEditor")
+          .toolbar {
+            editorToolbar
           }
         }
-        .accessibilityIdentifier(
-          "virtualCardScenarioOption.\(candidate.rawValue)")
-      }
+      #endif
     }
 
-    @ViewBuilder private var scenarioMenuLabel: some View {
-      VStack(alignment: .leading, spacing: Self.menuLineSpacing) {
-        Text(
-          virtualCardLocalized(
-            "scenario.preset",
-            defaultValue: "Preset")
-        )
-        .foregroundStyle(.primary)
-        Text(scenario.localizedName)
-          .foregroundStyle(.primary)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .virtualCardMenuControl()
-    }
-
-    internal var body: some View {
-      NavigationStack {
-        Form {
-          scenarioSection
-          VirtualIDCardConnectionSection(draft: $draft)
-          VirtualIDCardIdentitySection(draft: $draft)
-          VirtualIDCardActivationSection(draft: $draft)
-          pin1Credentials
-          pin2Credentials
-          pukCredentials
-          VirtualIDCardCertificatesSection(draft: $draft)
-          VirtualIDCardDeviceSection(draft: $draft)
-          VirtualIDCardFaultSection(faultPreset: $faultPreset)
+    #if os(macOS)
+      @ViewBuilder private var headerView: some View {
+        HStack(alignment: .center) {
+          VStack(alignment: .leading, spacing: Layout.headerSubtitleSpacing) {
+            Text(virtualCardLocalized("title", defaultValue: "Virtual ID Card"))
+              .font(.title2.bold())
+            Text(
+              virtualCardLocalized(
+                "header.subtitle",
+                defaultValue: "Simulated card and token state for testing")
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+          }
+          Spacer()
         }
-        .headerProminence(.increased)
-        .navigationTitle(
-          virtualCardLocalized("title", defaultValue: "Virtual ID Card")
-        )
-        .accessibilityIdentifier("virtualCardEditor")
-        .toolbar {
-          editorToolbar
+        .padding(.horizontal, Layout.headerHorizontalPadding)
+        .padding(.top, Layout.headerTopPadding)
+        .padding(.bottom, Layout.headerBottomPadding)
+      }
+
+      @ViewBuilder private var footerBar: some View {
+        HStack(spacing: Layout.footerSpacing) {
+          Spacer()
+          Button(
+            virtualCardLocalized("action.cancel", defaultValue: "Cancel")
+          ) {
+            close()
+          }
+          .keyboardShortcut(.cancelAction)
+          .accessibilityIdentifier("virtualCardCancel")
+          .accessibilityLabel(
+            Text(
+              virtualCardLocalized(
+                "action.cancelAccessibilityLabel",
+                defaultValue: "Cancel virtual card changes")))
+
+          Button(
+            virtualCardLocalized("action.apply", defaultValue: "Apply")
+          ) {
+            draft.faults = faultPreset.faults
+            demoMode.replace(with: draft)
+            close()
+          }
+          .keyboardShortcut(.defaultAction)
+          .buttonStyle(.borderedProminent)
+          .accessibilityIdentifier("virtualCardApply")
+          .accessibilityLabel(
+            Text(
+              virtualCardLocalized(
+                "action.applyAccessibilityLabel",
+                defaultValue: "Apply virtual card changes")))
+        }
+        .padding(.horizontal, Layout.footerHorizontalPadding)
+        .padding(.vertical, Layout.footerVerticalPadding)
+      }
+    #endif
+
+    #if os(iOS)
+      @ToolbarContentBuilder private var editorToolbar: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+          Button(
+            virtualCardLocalized("action.cancel", defaultValue: "Cancel")
+          ) { close() }
+          .accessibilityLabel(
+            Text(
+              virtualCardLocalized(
+                "action.cancelAccessibilityLabel",
+                defaultValue: "Cancel virtual card changes")))
+        }
+        ToolbarItem(placement: .confirmationAction) {
+          Button(
+            virtualCardLocalized("action.apply", defaultValue: "Apply")
+          ) {
+            draft.faults = faultPreset.faults
+            demoMode.replace(with: draft)
+            close()
+          }
+          .accessibilityIdentifier("virtualCardApply")
+          .accessibilityLabel(
+            Text(
+              virtualCardLocalized(
+                "action.applyAccessibilityLabel",
+                defaultValue: "Apply virtual card changes")))
         }
       }
-    }
-
-    @ViewBuilder private var pin1Credentials: some View {
-      credentialSection(
-        CredentialFieldSpec(
-          title: virtualCardLocalized("credential.pin1", defaultValue: "PIN 1"),
-          identifier: "virtualCardPIN1",
-          valueLabel: virtualCardLocalized(
-            "credential.pin1Value",
-            defaultValue: "PIN 1 value"),
-          attemptsLabel: virtualCardLocalized(
-            "credential.pin1Attempts",
-            defaultValue: "PIN 1 attempts")),
-        value: $draft.card.pin1.value,
-        attempts: attemptsBinding(\.pin1))
-    }
-
-    @ViewBuilder private var pin2Credentials: some View {
-      credentialSection(
-        CredentialFieldSpec(
-          title: virtualCardLocalized("credential.pin2", defaultValue: "PIN 2"),
-          identifier: "virtualCardPIN2",
-          valueLabel: virtualCardLocalized(
-            "credential.pin2Value",
-            defaultValue: "PIN 2 value"),
-          attemptsLabel: virtualCardLocalized(
-            "credential.pin2Attempts",
-            defaultValue: "PIN 2 attempts")),
-        value: $draft.card.pin2.value,
-        attempts: attemptsBinding(\.pin2))
-    }
-
-    @ViewBuilder private var pukCredentials: some View {
-      credentialSection(
-        CredentialFieldSpec(
-          title: virtualCardLocalized("credential.puk", defaultValue: "PUK"),
-          identifier: "virtualCardPUK",
-          valueLabel: virtualCardLocalized(
-            "credential.pukValue",
-            defaultValue: "PUK value"),
-          attemptsLabel: virtualCardLocalized(
-            "credential.pukAttempts",
-            defaultValue: "PUK attempts")),
-        value: $draft.card.puk.value,
-        attempts: attemptsBinding(\.puk))
-    }
-
-    @ToolbarContentBuilder private var editorToolbar: some ToolbarContent {
-      ToolbarItem(placement: .cancellationAction) {
-        Button(
-          virtualCardLocalized("action.cancel", defaultValue: "Cancel")
-        ) { close() }
-        .accessibilityLabel(
-          Text(
-            virtualCardLocalized(
-              "action.cancelAccessibilityLabel",
-              defaultValue: "Cancel virtual card changes")))
-      }
-      ToolbarItem(placement: .confirmationAction) {
-        Button(
-          virtualCardLocalized("action.apply", defaultValue: "Apply")
-        ) {
-          draft.faults = faultPreset.faults
-          demoMode.replace(with: draft)
-          close()
-        }
-        .accessibilityIdentifier("virtualCardApply")
-        .accessibilityLabel(
-          Text(
-            virtualCardLocalized(
-              "action.applyAccessibilityLabel",
-              defaultValue: "Apply virtual card changes")))
-      }
-    }
+    #endif
 
     // MARK: Lifecycle
 
@@ -237,56 +250,6 @@
       var snapshot = snapshot
       snapshot.card.transport = .reader
       return snapshot
-    }
-
-    // MARK: Content Methods
-
-    private func credentialSection(
-      _ spec: CredentialFieldSpec,
-      value: Binding<String>,
-      attempts: Binding<Int>
-    ) -> some View {
-      Section(spec.title) {
-        TextField(spec.valueLabel, text: value, axis: .vertical)
-          #if os(iOS)
-            .keyboardType(.numberPad)
-          #endif
-          .virtualCardEditorField()
-          .accessibilityIdentifier("\(spec.identifier)Value")
-        Stepper(
-          value: attempts,
-          in: Self.minimumAttempts...Int(RetryCount.pristineAllowance)
-        ) {
-          LabeledContent(spec.attemptsLabel) {
-            Text(String(attempts.wrappedValue))
-          }
-        }
-        .accessibilityIdentifier("\(spec.identifier)Attempts")
-        .accessibilityValue(
-          Text(
-            String.localizedStringWithFormat(
-              virtualCardLocalized(
-                "credential.attemptsRemaining",
-                defaultValue: "%lld attempts remaining"),
-              attempts.wrappedValue)))
-      }
-    }
-
-    // MARK: Functions
-
-    private func attemptsBinding(
-      _ keyPath: WritableKeyPath<
-        VirtualIDCard.CardState,
-        VirtualIDCard.CredentialState
-      >
-    ) -> Binding<Int> {
-      Binding(
-        get: {
-          Int(draft.card[keyPath: keyPath].attemptsRemaining)
-        },
-        set: { value in
-          draft.card[keyPath: keyPath].attemptsRemaining = UInt8(value)
-        })
     }
 
   }

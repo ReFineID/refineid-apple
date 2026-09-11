@@ -11,7 +11,6 @@
       /// The invitation wraps past this width instead of stretching
       /// the content-sized window to fit one long line.
       static let promptMaxWidth: CGFloat = 600
-      static let demoCardTopPadding: CGFloat = 4
     }
 
     @StateObject private var model = RappPairingModel()
@@ -22,18 +21,6 @@
       Section {
         promptText
           .frame(maxWidth: Layout.promptMaxWidth, alignment: .leading)
-        Button {
-          DemoMode.shared.activate(scenario: DemoMode.defaultScenario)
-          DemoMode.shared.setEditorPresented(true)
-        } label: {
-          Label(
-            String(localized: "Explore with a Virtual Demo Card"),
-            systemImage: "creditcard"
-          )
-        }
-        .buttonStyle(.link)
-        .padding(.top, Layout.demoCardTopPadding)
-        .accessibilityIdentifier("exploreVirtualDemoCardButton")
       }
       .onAppear {
         ensureOffer()

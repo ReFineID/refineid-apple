@@ -19,44 +19,23 @@
       }
     }
 
-    @ViewBuilder private var faultOptions: some View {
-      ForEach(VirtualIDCardEditor.offeredFaultPresets, id: \.self) { preset in
-        Button {
-          faultPreset = preset
-        } label: {
-          if faultPreset == preset {
-            Label(preset.localizedName, systemImage: "checkmark")
-          } else {
-            Text(preset.localizedName)
-          }
-        }
-        .accessibilityIdentifier(
-          "virtualCardFaultOption.\(preset.rawValue)")
-      }
-    }
-
-    @ViewBuilder private var faultMenuLabel: some View {
-      VStack(alignment: .leading, spacing: VirtualIDCardEditor.menuLineSpacing) {
-        Text(
-          virtualCardLocalized(
-            "fault.picker",
-            defaultValue: "Fault")
-        )
-        .foregroundStyle(.primary)
-        Text(faultPreset.localizedName)
-          .foregroundStyle(.primary)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .virtualCardMenuControl()
-    }
-
     @ViewBuilder private var faultMenu: some View {
-      Menu {
-        faultOptions
-      } label: {
-        faultMenuLabel
+      Picker(
+        virtualCardLocalized(
+          "fault.picker",
+          defaultValue: "Fault"),
+        selection: $faultPreset
+      ) {
+        ForEach(VirtualIDCardEditor.offeredFaultPresets, id: \.self) { preset in
+          Text(preset.localizedName)
+            .tag(preset)
+            .accessibilityIdentifier(
+              "virtualCardFaultOption.\(preset.rawValue)")
+        }
       }
+      .pickerStyle(.menu)
       .tint(.primary)
+      .virtualCardMenuControl()
       .accessibilityIdentifier("virtualCardFault")
     }
   }

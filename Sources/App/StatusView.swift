@@ -19,14 +19,14 @@
   /// document on the app is the thing a holder will try, and the app
   /// they dropped it on should be the one that signs it.
   internal struct StatusView: View {
-    private static let spacing: CGFloat = 12
+    private static let spacing: CGFloat = 14
     private static let padding: CGFloat = 24
 
     /// The narrowest the window may be, which grows with the text
     /// inside it so a larger size widens the window instead of
     /// wrapping every label in it.
     @ScaledMetric(relativeTo: .body)
-    private var minimumWidth: CGFloat = 420
+    private var minimumWidth: CGFloat = 520
 
     internal let model = LoginIdentityModel.shared
     @ObservedObject internal var retryHealth = CredentialRetryHealth.shared
