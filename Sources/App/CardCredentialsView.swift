@@ -328,8 +328,6 @@ internal struct CardCredentialsView: View {
             // optional hook; default is a no-op
           }
         )
-        .navigationTitle("RefineID")
-        .navigationBarTitleDisplayMode(.large)
       } else {
         credentialsForm
       }

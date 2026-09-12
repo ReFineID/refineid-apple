@@ -1669,6 +1669,22 @@
         }
       }
     },
+    "Demo Mode": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esittelytila"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demoläge"
+          }
+        }
+      }
+    },
     "Demo Mode…": {
       "localizations": {
         "fi": {

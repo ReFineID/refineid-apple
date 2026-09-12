@@ -108,6 +108,7 @@
           Divider()
           footerBar
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("virtualCardEditor")
       #else
         NavigationStack {
@@ -125,6 +126,7 @@
           .navigationTitle(
             virtualCardLocalized("title", defaultValue: "Virtual ID Card")
           )
+          .accessibilityElement(children: .contain)
           .accessibilityIdentifier("virtualCardEditor")
           .toolbar {
             editorToolbar
@@ -163,12 +165,13 @@
             close()
           }
           .keyboardShortcut(.cancelAction)
-          .accessibilityIdentifier("virtualCardCancel")
           .accessibilityLabel(
             Text(
               virtualCardLocalized(
                 "action.cancelAccessibilityLabel",
-                defaultValue: "Cancel virtual card changes")))
+                defaultValue: "Cancel virtual card changes"))
+          )
+          .accessibilityIdentifier("virtualCardCancel")
 
           Button(
             virtualCardLocalized("action.apply", defaultValue: "Apply")
@@ -179,12 +182,13 @@
           }
           .keyboardShortcut(.defaultAction)
           .buttonStyle(.borderedProminent)
-          .accessibilityIdentifier("virtualCardApply")
           .accessibilityLabel(
             Text(
               virtualCardLocalized(
                 "action.applyAccessibilityLabel",
-                defaultValue: "Apply virtual card changes")))
+                defaultValue: "Apply virtual card changes"))
+          )
+          .accessibilityIdentifier("virtualCardApply")
         }
         .padding(.horizontal, Layout.footerHorizontalPadding)
         .padding(.vertical, Layout.footerVerticalPadding)
@@ -201,7 +205,9 @@
             Text(
               virtualCardLocalized(
                 "action.cancelAccessibilityLabel",
-                defaultValue: "Cancel virtual card changes")))
+                defaultValue: "Cancel virtual card changes"))
+          )
+          .accessibilityIdentifier("virtualCardCancel")
         }
         ToolbarItem(placement: .confirmationAction) {
           Button(
@@ -211,12 +217,13 @@
             demoMode.replace(with: draft)
             close()
           }
-          .accessibilityIdentifier("virtualCardApply")
           .accessibilityLabel(
             Text(
               virtualCardLocalized(
                 "action.applyAccessibilityLabel",
-                defaultValue: "Apply virtual card changes")))
+                defaultValue: "Apply virtual card changes"))
+          )
+          .accessibilityIdentifier("virtualCardApply")
         }
       }
     #endif

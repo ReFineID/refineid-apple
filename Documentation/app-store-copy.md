@@ -40,7 +40,7 @@ Read your card with a USB-C smart-card reader, or wirelessly on iPhone,
 then sign in to e-services directly in Safari with the certificate on
 your card. Pick a PDF in ReFineID to sign it with a qualified signature.
 
-ReFineID is open source: github.com/ReFineID/ReFineID-Apple
+ReFineID is open source: github.com/refineid/refineid-apple
 
 ### Suomi
 
@@ -51,7 +51,7 @@ kirjaudu sähköisiin palveluihin suoraan Safarissa kortin varmenteella.
 Valitse PDF ReFineID:ssä ja allekirjoita se hyväksytyllä sähköisellä
 allekirjoituksella.
 
-ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
+ReFineID on avointa lähdekoodia: github.com/refineid/refineid-apple
 
 ### Svenska
 
@@ -62,7 +62,7 @@ in på e-tjänster direkt i Safari med kortets certifikat. Välj en PDF i
 ReFineID för att underteckna den med en kvalificerad elektronisk
 underskrift.
 
-ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
+ReFineID är öppen källkod: github.com/refineid/refineid-apple
 
 ## macOS description
 
@@ -78,7 +78,7 @@ Insert your identity card into a USB smart-card reader and sign in to
 e-services directly in Safari with the certificate on your card. Drop a
 PDF on ReFineID to sign it with a qualified signature.
 
-ReFineID is open source: github.com/ReFineID/ReFineID-Apple
+ReFineID is open source: github.com/refineid/refineid-apple
 
 ### Suomi
 
@@ -89,7 +89,7 @@ palveluihin suoraan Safarissa kortin varmenteella. Pudota PDF
 ReFineID:hen ja allekirjoita se hyväksytyllä sähköisellä
 allekirjoituksella.
 
-ReFineID on avointa lähdekoodia: github.com/ReFineID/ReFineID-Apple
+ReFineID on avointa lähdekoodia: github.com/refineid/refineid-apple
 
 ### Svenska
 
@@ -99,7 +99,7 @@ Sätt identitetskortet i en USB-kortläsare och logga in på e-tjänster
 direkt i Safari med kortets certifikat. Släpp en PDF på ReFineID för
 att underteckna den med en kvalificerad elektronisk underskrift.
 
-ReFineID är öppen källkod: github.com/ReFineID/ReFineID-Apple
+ReFineID är öppen källkod: github.com/refineid/refineid-apple
 
 ## Keywords
 
