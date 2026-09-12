@@ -27,6 +27,9 @@ extension ReFineIDApp {
 
   internal static func startRemoteServices() {
     guard !TestCredentialEnvironment.isTestMode else { return }
+    #if DEBUG
+      if DebugLaunchModes.selected() != nil { return }
+    #endif
 
     #if REFINEID_LOCAL_CARD && os(iOS)
       HolderCardServing.availabilityChanged()
