@@ -60,6 +60,19 @@ internal struct ReFineIDApp: App {
   @ObservedObject private var demoMode = DemoMode.shared
   @State private var showsVirtualCardEditor = false
 
+  private var demoModeBinding: Binding<Bool> {
+    Binding(
+      get: { demoMode.isActive },
+      set: { active in
+        if active {
+          demoMode.activate(scenario: DemoMode.defaultScenario)
+        } else {
+          demoMode.deactivate()
+        }
+      }
+    )
+  }
+
   internal var body: some Scene {
     #if os(macOS)
       Window(Self.statusWindowTitle, id: "status") {
@@ -77,22 +90,15 @@ internal struct ReFineIDApp: App {
           Button("About RefineID") {
             ProductSite.presentAboutPanel()
           }
-          Divider()
+        }
+        CommandGroup(after: .toolbar) {
+          Toggle(String(localized: "Demo Mode"), isOn: demoModeBinding)
+            .keyboardShortcut("d", modifiers: [.command, .option])
           if demoMode.isActive {
             Button(String(localized: "Edit Virtual Card…")) {
               demoMode.setEditorPresented(true)
             }
             .keyboardShortcut("e", modifiers: [.command, .option])
-            Button(String(localized: "Exit Demo Mode")) {
-              demoMode.deactivate()
-            }
-            .keyboardShortcut("d", modifiers: [.command, .option])
-          } else {
-            Button(String(localized: "Demo Mode…")) {
-              demoMode.activate(scenario: DemoMode.defaultScenario)
-              demoMode.setEditorPresented(true)
-            }
-            .keyboardShortcut("d", modifiers: [.command, .option])
           }
         }
         CommandGroup(replacing: .help) {

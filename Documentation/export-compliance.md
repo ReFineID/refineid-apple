@@ -135,7 +135,7 @@ scope to the public source repository, for example:
     available encryption source code is available at no cost:
 
     ReFineID - Finnish identity card middleware for Apple platforms
-    https://github.com/ReFineID/ReFineID-Apple
+    https://github.com/refineid/refineid-apple
 
     The software implements PACE (ICAO 9303-11, BSI TR-03110) with ECDH on
     brainpoolP384r1, AES-256 CBC and AES-CMAC secure messaging, and ECDSA

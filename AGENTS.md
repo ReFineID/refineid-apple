@@ -20,7 +20,6 @@
 - Apple uses PascalCase.
 - ASCII only in source, UTF-8 only where required.
 - No Magic Codes - define everything.
-- Commit often when compiles and lint is clean.
 - After a feature commit, install that build on every machine that
   can run it: `Scripts/install-all-devices.sh`. The commit is the
   cheap backup; Mac, the connected iPhone or iPad, and the iPad
@@ -34,7 +33,6 @@
   on the `xcodebuild` command line: the override breaks automatic signing
   and fails with `No Account for Team` even when the certificates are
   on the Mac.
-- Push when feature is ready.
 - Reusable agent workflows are plain scripts under `Scripts/`, each with a
   usage header, so any agent of any vendor can discover and run them. Keep
   agent guidance vendor-neutral in this AGENTS.md, not in one vendor's skill
@@ -44,9 +42,26 @@
   Cite what a source proves, and say what it does not.
   Where observation contradicts Apple's docs, the recorded
   exchange wins and is cited as observation, not spec.
-- Never put a git worktree under `/tmp`. It is cleared on reboot and
-  takes the branch's only checkout with it. Keep worktrees beside the
-  repository.
+- The quality gates are mandatory git hooks, not suggestions. Activate
+  once per clone: `git config core.hooksPath Scripts/githooks`. Pre-commit
+  and pre-push run `Scripts/lint.sh`; `commit-msg` enforces subject and body
+  only with zero trailers. Never commit or push with `--no-verify`, never
+  disable or work around a gate to land a change, and never leave hooks
+  uninstalled. Fix findings instead of dodging them.
+- Commit often when compiles and lint is clean. Push when feature is ready.
+  Subject and body only: no AI attribution, co-author, sign-off, or review
+  trailers.
+- One task, one worktree (`../refineid-apple-<topic>`) on one
+  `agent/<topic>` branch, one pull request per branch. Each worktree carries
+  a `WHATSUP.md` work log; run `Scripts/agent-housekeeping.sh` when starting
+  and keep the house clean. Merge the pull request once CI is green, then
+  remove the worktree and branch and fast-forward `main`. Full workflow:
+  `Documentation/process/agent-worktrees.md`.
+- Never put a git worktree under `/tmp`. It is cleared on reboot and takes
+  the branch's only checkout with it. Keep worktrees beside the repository.
+- Never poll background commands or set rapid check timers (e.g. 10s-30s).
+  When running builds, tests, or async tasks, execute asynchronously and
+  wait strictly for system completion notifications.
 - Less is more. Terse is better.
 - Do not leak personal or private information in commits.
 - Never store device UUIDs or UDIDs in version control; discover

@@ -91,7 +91,6 @@
       }
       .buttonStyle(.borderedProminent)
       .tint(Self.accessibleRed)
-      .accessibilityIdentifier("virtualCardOverlay")
       .accessibilityLabel(
         Text(virtualCardLocalized("title", defaultValue: "Virtual ID Card"))
       )
@@ -102,6 +101,7 @@
             "openHint",
             defaultValue: "Opens the virtual card settings."))
       )
+      .accessibilityIdentifier("virtualCardOverlay")
       .padding(.trailing, Constants.trailingPadding)
       .padding(.bottom, Constants.bottomPadding)
     }

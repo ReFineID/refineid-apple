@@ -1,0 +1,15 @@
+#!/bin/sh
+# Copyright 2026 Petri Koistinen. Licensed under the Apache License, Version 2.0.
+#
+# Rule: no commit trailers (especially Co-authored-by: AI).
+# Subject + body only.
+
+set -eu
+
+msg="$1"
+if grep -qiE '^(Co-authored-by|Signed-off-by|Reviewed-by|Acked-by|Tested-by|Reported-by):' "$msg"; then
+    echo "commit-msg: GOLDEN RULE — commit trailers forbidden." >&2
+    echo "No Co-authored-by for any AI." >&2
+    echo "Subject + body only. Disable IDE --trailer injection." >&2
+    exit 1
+fi

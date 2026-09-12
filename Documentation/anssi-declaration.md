@@ -137,9 +137,9 @@ disponibles ici :
 
 ```{=typst}
 #block[
-  #link("https://github.com/ReFineID/ReFineID-Apple")[
+  #link("https://github.com/refineid/refineid-apple")[
     #text(fill: rgb("#0969da"))[
-      #underline[https://github.com/ReFineID/ReFineID-Apple]
+      #underline[https://github.com/refineid/refineid-apple]
     ]
   ]
 ]
